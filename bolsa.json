@@ -1,0 +1,12 @@
+{
+  "fuente": "Yahoo Finance (ICE Futures U.S.)",
+  "mercado": "Café C, Bolsa de Nueva York",
+  "contrato": "marzo 2027",
+  "simbolo": "KCH27.NYB",
+  "unidad": "centavos de dólar por libra",
+  "precio": 268.55,
+  "cierreAnterior": 270.0,
+  "variacion": -1.45,
+  "horaDelDato": "2026-11-25T18:29:59Z",
+  "actualizadoEn": "2026-11-27T00:43:00Z"
+}

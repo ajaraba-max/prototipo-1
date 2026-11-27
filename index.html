@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compras de Café «Mi Origen» — Sistema de Tasación y Cotización</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (typeof tailwind !== 'undefined') tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            espresso: { 950: '#1D110C', 900: '#2C1A12', 800: '#3E251A', 700: '#5A3828' },
+            parchment: { 50: '#FDFBF8', 100: '#FAF7F2', 200: '#F2ECE3', 300: '#E5DCCF' },
+            cafetal: { 50: '#ECFDF5', 100: '#D1FAE5', 600: '#1B6B4A', 700: '#145339', 800: '#0F3F2B' },
+            cosecha: { 50: '#FFFBEB', 100: '#FEF3C7', 500: '#D97706', 600: '#B45309' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background-color: #FAF7F2; color: #1D110C; }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    .nav-item.active { background-color: rgba(255,255,255,0.12); color: #FFFFFF; font-weight: 600; }
+    .nav-item { color: #D6C7BC; transition: all 0.15s ease; }
+    .nav-item:hover:not(.active) { background-color: rgba(255,255,255,0.06); color: #FFFFFF; }
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area { position: absolute; left: 0; top: 0; width: 100%; background: white; padding: 16px; }
+    }
+    /* Subtle scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D6C7BC; border-radius: 999px; }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-cafetal-100 selection:text-cafetal-800">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- Modal Container -->
+  <div id="modal-backdrop" class="fixed inset-0 z-40 bg-espresso-950/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div id="modal-box" class="bg-white rounded-2xl shadow-2xl border border-parchment-300 w-full max-w-2xl max-h-[90vh] overflow-y-auto my-auto"></div>
+  </div>
+
+  <!-- Printable Area (hidden on screen) -->
+  <div id="print-area" class="hidden print:block"></div>
+
+  <!-- ==================== LOGIN SCREEN (HU21) ==================== -->
+  <div id="login-view" class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-parchment-100 via-parchment-50 to-parchment-200">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-parchment-300 overflow-hidden">
+      <div class="bg-espresso-900 px-6 py-7 text-white relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-cafetal-600/20 blur-xl"></div>
+        <div class="flex items-center gap-3.5 relative z-10">
+          <div class="w-12 h-12 rounded-2xl bg-cafetal-600 flex items-center justify-center shadow-lg shrink-0">
+            <svg viewBox="0 0 32 32" class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2.2">
+              <ellipse cx="16" cy="16" rx="10" ry="13" transform="rotate(-25 16 16)" />
+              <path d="M11 6.5C15 11.5 17 20.5 21 25.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-widest text-parchment-300 font-semibold">Sistema de Información Web</p>
+            <h1 class="text-xl font-bold tracking-tight">Compras de Café «Mi Origen»</h1>
+            <p class="text-xs text-parchment-300/90 mt-0.5">Sedes Abejorral y Pantanillo · Antioquia</p>
+          </div>
+        </div>
+      </div>
+
+      <form id="login-form" class="p-6 sm:p-7 space-y-4" novalidate>
+        <div>
+          <label for="login-cedula" class="block text-sm font-semibold text-espresso-900 mb-1.5">Cédula de ciudadanía</label>
+          <input id="login-cedula" type="text" inputmode="numeric" maxlength="10" autocomplete="username" placeholder="Solo números (máx. 10 dígitos)"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-parchment-300 bg-parchment-50/50 text-espresso-950 focus:outline-none focus:ring-2 focus:ring-cafetal-600 focus:bg-white tabular-nums" />
+        </div>
+        <div>
+          <label for="login-password" class="block text-sm font-semibold text-espresso-900 mb-1.5">Contraseña</label>
+          <input id="login-password" type="password" autocomplete="current-password" placeholder="Ingresa tu contraseña"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-parchment-300 bg-parchment-50/50 text-espresso-950 focus:outline-none focus:ring-2 focus:ring-cafetal-600 focus:bg-white" />
+        </div>
+        <div id="login-error" class="hidden text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"></div>
+        <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white font-semibold shadow-sm transition cursor-pointer flex items-center justify-center gap-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          Ingresar a la plataforma
+        </button>
+
+        <div class="pt-4 border-t border-parchment-200">
+          <p class="text-xs font-semibold text-espresso-700 mb-2.5">Accesos de prueba por rol (HU21):</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button type="button" id="quick-login-jefa" class="text-left p-3 rounded-xl border border-parchment-300 hover:border-cafetal-600 hover:bg-cafetal-50/40 transition cursor-pointer">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-espresso-900">Jefa (Maritza)</span>
+                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-cafetal-100 text-cafetal-800">Abejorral</span>
+              </div>
+              <p class="text-[11px] text-espresso-700 mt-1 tabular-nums">CC: 43810200</p>
+              <p class="text-[10px] text-stone-500">Acceso total + precios</p>
+            </button>
+            <button type="button" id="quick-login-encargada" class="text-left p-3 rounded-xl border border-parchment-300 hover:border-cosecha-500 hover:bg-cosecha-50/50 transition cursor-pointer">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-espresso-900">Catadora / Encargada</span>
+                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-cosecha-100 text-cosecha-600">Pantanillo</span>
+              </div>
+              <p class="text-[11px] text-espresso-700 mt-1 tabular-nums">CC: 10203040</p>
+              <p class="text-[10px] text-stone-500">Tasación, compras y pasilla</p>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP SHELL ==================== -->
+  <div id="app-shell" class="hidden min-h-screen flex flex-col lg:flex-row">
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-espresso-950/50 z-30 hidden lg:hidden"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-64 bg-espresso-900 text-white flex flex-col shrink-0 transform -translate-x-full lg:translate-x-0 transition-transform duration-200">
+      <div class="px-5 py-5 border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-cafetal-600 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 32 32" class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.4">
+              <ellipse cx="16" cy="16" rx="10" ry="13" transform="rotate(-25 16 16)" />
+              <path d="M11 6.5C15 11.5 17 20.5 21 25.5" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold leading-tight">Mi Origen</p>
+            <p class="text-[11px] text-parchment-300/80">Compras de Café</p>
+          </div>
+        </div>
+        <button id="close-sidebar-btn" type="button" class="lg:hidden p-1.5 rounded-lg text-parchment-300 hover:text-white hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- User Badge -->
+      <div class="px-4 py-3.5 border-b border-white/10 bg-espresso-950/40">
+        <div class="flex items-center gap-2.5">
+          <div id="user-avatar" class="w-8 h-8 rounded-full bg-cafetal-600/80 flex items-center justify-center text-xs font-bold shrink-0">MH</div>
+          <div class="min-w-0">
+            <p id="user-name-label" class="text-xs font-semibold truncate">Maritza Hernández</p>
+            <p id="user-role-label" class="text-[11px] text-cafetal-100/90 truncate">Jefa · Sede Abejorral</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav Links -->
+      <nav id="sidebar-nav" class="flex-1 overflow-y-auto px-3 py-4 space-y-1 text-sm"></nav>
+
+      <!-- Sidebar Footer -->
+      <div class="p-3 border-t border-white/10 space-y-1.5">
+        <button id="btn-reset-demo" type="button" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-parchment-300 hover:text-white hover:bg-white/10 transition cursor-pointer">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          Reiniciar datos de prueba
+        </button>
+        <button id="btn-logout" type="button" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-red-200 hover:text-white hover:bg-red-500/20 transition cursor-pointer">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Top Bar with Live Synchronized Price Banner (HU03) -->
+      <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-parchment-300 px-4 sm:px-6 py-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <button id="open-sidebar-btn" type="button" class="lg:hidden p-2 rounded-xl border border-parchment-300 text-espresso-900 hover:bg-parchment-100">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="min-w-0">
+              <h2 id="page-title" class="text-base sm:text-lg font-bold text-espresso-950 truncate">Panel Principal</h2>
+              <p id="page-subtitle" class="text-xs text-stone-500 truncate">Sedes Abejorral y Pantanillo sincronizadas</p>
+            </div>
+          </div>
+
+          <!-- Synchronized Base Price Pill (HU03) -->
+          <div id="top-price-banner" class="flex items-center gap-3 bg-parchment-100 border border-parchment-300 rounded-2xl px-3.5 py-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-cafetal-600 shrink-0"></div>
+            <div class="text-xs leading-tight">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-stone-600">Precio Base Vigente (2 sedes):</span>
+                <span id="banner-base-carga" class="font-extrabold text-espresso-950 tabular-nums">$2.050.000</span>
+                <span class="text-stone-400">|</span>
+                <span id="banner-base-kilo" class="font-bold text-cafetal-700 tabular-nums">$16.400/kg</span>
+              </div>
+              <p id="banner-base-meta" class="text-[11px] text-stone-500 mt-0.5">Fijado por Maritza Hernández · Base del día: $2.100.000</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Global Intraday Drop Alert Banner (HU04 -> HU05, Jefa only) -->
+      <div id="global-drop-alert" class="hidden bg-red-50 border-b border-red-200 px-4 sm:px-6 py-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 max-w-7xl mx-auto">
+          <div class="flex items-center gap-2.5 text-xs sm:text-sm text-red-800 font-medium">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600 shrink-0"></i>
+            <span id="global-drop-alert-text"></span>
+          </div>
+          <button id="global-drop-alert-btn" type="button" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition cursor-pointer">
+            Abrir «Ajustar el precio de compra»
+          </button>
+        </div>
+      </div>
+
+      <!-- Dynamic Section Container -->
+      <main id="main-content" class="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6"></main>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+      function refreshIcons(opts) { if (typeof lucide !== 'undefined' && lucide.createIcons) { lucide.createIcons(opts); } }
+
+      const STORAGE_KEY = 'mi_origen_cafe_v2_state';
+
+      // ==================== MODO AVANCE (ACTIVAR / OCULTAR MÓDULOS) ====================
+      // Cambia a `false` para volver a activar el inicio de sesión y todos los demás módulos.
+      const MODO_SOLO_PRECIO_BASE = true;
+
+      // ==================== FUENTES DE LA BOLSA Y EL DÓLAR (HU04) ====================
+      // La bolsa: un proceso de GitHub Actions consulta el café C cada 15 minutos en
+      // horario de bolsa y lo guarda en bolsa.json. Primero se lee desde GitHub
+      // (sirve también si se abre el archivo en el computador) y, si falla, desde
+      // la misma página publicada.
+      const BOLSA_URLS = [
+        'https://raw.githubusercontent.com/ajaraba-max/prototipo-1/main/bolsa.json',
+        'bolsa.json'
+      ];
+      // El dólar: TRM oficial publicada por la Superintendencia Financiera en datos.gov.co.
+      const TRM_URL = 'https://www.datos.gov.co/resource/32sa-8pi3.json';
+      // Cada cuánto se vuelven a consultar mientras la página está abierta.
+      const MERCADO_REFRESCO_MS = 5 * 60 * 1000;
+
+      // ==================== USERS (HU21) ====================
+      const USERS = [
+        {
+          cedula: '43810200',
+          password: 'miorigen2026',
+          nombre: 'Maritza Hernández',
+          rol: 'jefa',
+          rolLabel: 'Jefa (Propietaria)',
+          sede: 'Abejorral',
+          iniciales: 'MH'
+        },
+        {
+          cedula: '10203040',
+          password: 'pantanillo2026',
+          nombre: 'Luisa Fernanda Gómez',
+          rol: 'catadora',
+          rolLabel: 'Catadora-negociadora (Encargada)',
+          sede: 'Pantanillo',
+          iniciales: 'LG'
+        }
+      ];
+
+      // Quality feedback guide (referenced in 3.1 & HU07)
+      const DEFECT_GUIDE = [
+        { defecto: 'Humedad alta (> 12%)', causa: 'Secado insuficiente o almacenamiento en ambiente húmedo.', recomendacion: 'Extender el secado al sol en capas delgadas y revolver cada 2–3 horas hasta llegar entre 10,5% y 12%.' },
+        { defecto: 'Granos con broca', causa: 'Infestación en el cafetal y falta de recolección oportuna (re-re).', recomendacion: 'Realizar recolección frecuente, recoger granos del suelo y controlar focos en los lotes afectados.' },
+        { defecto: 'Pasilla / granos pequeños o imperfectos', causa: 'Recolección de granos verdes, sobremaduros o mal despulpado.', recomendacion: 'Cosechar solo cereza madura, calibrar la despulpadora y hacer clasificación hidráulica en el lavado.' }
+      ];
+
+      // ==================== INITIAL SEED DATA ====================
+      function getTodayISO() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+
+      function getNowTime() {
+        const d = new Date();
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
+
+      function buildInitialState() {
+        const today = getTodayISO();
+        const d1 = new Date(); d1.setDate(d1.getDate() - 1);
+        const yesterday = `${d1.getFullYear()}-${String(d1.getMonth() + 1).padStart(2, '0')}-${String(d1.getDate()).padStart(2, '0')}`;
+        const d2 = new Date(); d2.setDate(d2.getDate() - 2);
+        const twoDaysAgo = `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}-${String(d2.getDate()).padStart(2, '0')}`;
+
+        return {
+          currentUserCedula: null,
+          activeTab: 'tasacion',
+          // HU01: Daily closing bases
+          basesDia: [
+            {
+              id: 'BASE-1',
+              fechaCierre: yesterday,
+              hora: '15:20',
+              trilladora: 'Trilladora del Oriente',
+              valorCarga: 2100000,
+              usuario: 'Maritza Hernández'
+            }
+          ],
+          // HU02, HU03, HU05: Base price history (latest = active for BOTH branches)
+          precioBaseVigente: {
+            id: 'PB-1',
+            baseDiaId: 'BASE-1',
+            fechaCierreOrigen: yesterday,
+            fecha: yesterday,
+            hora: '15:25',
+            trilladora: 'Trilladora del Oriente',
+            baseDelDia: 2100000,
+            margen: 50000,
+            valorCarga: 2050000,
+            valorKilo: 16400,
+            usuario: 'Maritza Hernández',
+            tipo: 'Fijación de cierre',
+            motivo: 'Base de cierre menos margen estándar ($50.000)',
+            precioTrilladoraReferenciaAjuste: null
+          },
+          historialPreciosBase: [
+            {
+              id: 'PB-1',
+              fecha: yesterday,
+              hora: '15:25',
+              baseDelDia: 2100000,
+              margen: 50000,
+              valorCarga: 2050000,
+              valorKilo: 16400,
+              usuario: 'Maritza Hernández',
+              tipo: 'Fijación de cierre',
+              motivo: 'Base de cierre menos margen estándar ($50.000)'
+            }
+          ],
+          // HU04: NY Exchange & USD + Intraday Trilladora prices.
+          // Estos valores son de ejemplo: se reemplazan apenas responde la consulta en línea.
+          mercado: {
+            bolsaNY: 280.50,
+            bolsaNYAnterior: 283.70,
+            bolsaEtiquetaAnterior: 'Anterior',
+            bolsaContrato: null,
+            bolsaHora: `${today} 08:30`,
+            bolsaFuente: 'Valor de ejemplo (todavía sin consultar)',
+            dolarTRM: 4050,
+            dolarTRMAnterior: 4035,
+            dolarEtiquetaAnterior: 'Anterior',
+            dolarHora: `${today} 08:30`,
+            dolarFuente: 'Valor de ejemplo (todavía sin consultar)',
+            ultimaConsulta: null
+          },
+          preciosTrilladoraJornada: [],
+          // HU06, HU07: Registered farmers (unique by cedula)
+          agricultores: [
+            { cedula: '70123456', nombre: 'Carlos Arturo Ramírez' },
+            { cedula: '71456789', nombre: 'María Elena Osorio' },
+            { cedula: '15320984', nombre: 'José Iván Gallego' },
+            { cedula: '43652109', nombre: 'Luz Marina Valencia' }
+          ],
+          // Active loads / quotes (cargas & cotizaciones)
+          cargas: [
+            {
+              id: 'CAR-1001',
+              fecha: twoDaysAgo,
+              sede: 'Abejorral',
+              cedula: '70123456',
+              nombreAgricultor: 'Carlos Arturo Ramírez',
+              kilosBascula: 125,
+              muestra: {
+                pesoMuestra: 200,
+                gramosAlmendraLimpia: 155.56,
+                humedad: 11.8,
+                gramosPasilla: 8,
+                gramosBroca: 3,
+                factorExacto: 90.00,
+                factorAproximado: 90,
+                puntos: 4
+              },
+              descuentoHumedadKg: 0,
+              kilosPagar: 125,
+              precioBaseCargaCongelado: 2050000,
+              precioBaseKiloCongelado: 16400,
+              valorUnitarioCalculado: 17056,
+              valorUnitarioPagado: 17056,
+              pagoTotal: 2132000,
+              kilosExcelso: 97.22,
+              estado: 'Comprada',
+              ajusteJefa: null,
+              registradoPor: 'Maritza Hernández',
+              horaRegistro: '09:15'
+            },
+            {
+              id: 'CAR-1002',
+              fecha: yesterday,
+              sede: 'Pantanillo',
+              cedula: '71456789',
+              nombreAgricultor: 'María Elena Osorio',
+              kilosBascula: 125,
+              muestra: {
+                pesoMuestra: 200,
+                gramosAlmendraLimpia: 140,
+                humedad: 12.0,
+                gramosPasilla: 18,
+                gramosBroca: 9,
+                factorExacto: 100.00,
+                factorAproximado: 100,
+                puntos: -6
+              },
+              descuentoHumedadKg: 0,
+              kilosPagar: 125,
+              precioBaseCargaCongelado: 2050000,
+              precioBaseKiloCongelado: 16400,
+              valorUnitarioCalculado: 15416,
+              valorUnitarioPagado: 15416,
+              pagoTotal: 1927000,
+              kilosExcelso: 87.50,
+              estado: 'Comprada',
+              ajusteJefa: null,
+              registradoPor: 'Luisa Fernanda Gómez',
+              horaRegistro: '10:40'
+            },
+            {
+              id: 'CAR-1003',
+              fecha: yesterday,
+              sede: 'Abejorral',
+              cedula: '70123456',
+              nombreAgricultor: 'Carlos Arturo Ramírez',
+              kilosBascula: 500,
+              muestra: {
+                pesoMuestra: 250,
+                gramosAlmendraLimpia: 190.22,
+                humedad: 12.0,
+                gramosPasilla: 10,
+                gramosBroca: 4,
+                factorExacto: 92.00,
+                factorAproximado: 92,
+                puntos: 2
+              },
+              descuentoHumedadKg: 0,
+              kilosPagar: 500,
+              precioBaseCargaCongelado: 2050000,
+              precioBaseKiloCongelado: 16400,
+              valorUnitarioCalculado: 16728,
+              valorUnitarioPagado: 16728,
+              pagoTotal: 8364000,
+              kilosExcelso: 380.43,
+              estado: 'Cotizada',
+              ajusteJefa: null,
+              registradoPor: 'Maritza Hernández',
+              horaRegistro: '11:20'
+            }
+          ],
+          // HU19: Separate Pasilla sheet
+          pasillas: [
+            {
+              id: 'PAS-101',
+              fecha: yesterday,
+              sede: 'Abejorral',
+              cedula: '70123456',
+              nombreAgricultor: 'Carlos Arturo Ramírez',
+              kilos: 30,
+              valorUnitario: 8000,
+              totalPagar: 240000,
+              registradoPor: 'Maritza Hernández'
+            }
+          ],
+          selectedCargaId: 'CAR-1003',
+          transporteConsultaCarga: 0
+        };
+      }
+
+      let state = loadState();
+      let farmerChartInstance = null;
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.precioBaseVigente && Array.isArray(parsed.cargas)) {
+              // Completa los campos del mercado que no existían en versiones anteriores.
+              parsed.mercado = { ...buildInitialState().mercado, ...(parsed.mercado || {}) };
+              return parsed;
+            }
+          }
+        } catch (e) { /* ignore storage restrictions */ }
+        return buildInitialState();
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e) { /* ignore storage restrictions */ }
+      }
+
+      // ==================== CORE BUSINESS FORMULAS (RN001 - RN019) ====================
+      const fmtCOP = (n) => {
+        if (n === null || n === undefined || isNaN(n)) return '$0';
+        const sign = n < 0 ? '−' : '';
+        return `${sign}$${Math.round(Math.abs(n)).toLocaleString('es-CO')}`;
+      };
+
+      const fmtNum = (n, dec = 2) => {
+        if (n === null || n === undefined || isNaN(n)) return '0';
+        return Number(n).toLocaleString('es-CO', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+      };
+
+      function isValidCedula(val) {
+        return /^\d{1,10}$/.test(String(val || '').trim());
+      }
+
+      // RN005 & HU09 Esc. 1: Suggested sample weight
+      function sugerirPesoMuestra(kilos) {
+        return Number(kilos) < 500 ? 200 : 250;
+      }
+
+      // RN006 & HU09 Esc. 2: Factor = (pesoMuestra * 70) / gramosAlmendraLimpia
+      function calcularFactorExacto(pesoMuestra, gramosAlmendra) {
+        return Number(((pesoMuestra * 70) / gramosAlmendra).toFixed(2));
+      }
+
+      // RN006 & HU10 Esc. 1: Round half up (94.50 -> 95, 94.49 -> 94)
+      function aproximarFactor(factorExacto) {
+        return Math.floor(Number(factorExacto) + 0.5);
+      }
+
+      // RN018 & HU08: Moisture discount (> 12%)
+      function calcularDescuentoHumedad(kilosBascula, humedad) {
+        if (humedad > 12) {
+          const desc = Number(((kilosBascula * (humedad - 12)) / 100).toFixed(2));
+          return { descuentoKg: desc, kilosPagar: Number((kilosBascula - desc).toFixed(2)) };
+        }
+        return { descuentoKg: 0, kilosPagar: Number(kilosBascula) };
+      }
+
+      // RN007 & HU11: Unit price from base price & rounded factor
+      function calcularValorUnitario(precioBaseCarga, factorAproximado) {
+        const baseKilo = precioBaseCarga / 125;
+        const puntos = 94 - factorAproximado;
+        return Math.round(baseKilo * (1 + puntos / 100));
+      }
+
+      // RN011 & HU13: Kilos of excelso = (kilosPagar / factorExacto) * 70
+      function calcularKilosExcelso(kilosPagar, factorExacto) {
+        if (!factorExacto || factorExacto <= 0) return 0;
+        return Number(((kilosPagar / factorExacto) * 70).toFixed(2));
+      }
+
+      // HU04 Esc. 2 & 3: Reference price for intraday drop comparison
+      function getReferenciaTrilladoraActual() {
+        const pv = state.precioBaseVigente;
+        if (pv.precioTrilladoraReferenciaAjuste && pv.precioTrilladoraReferenciaAjuste > 0) {
+          return {
+            valor: pv.precioTrilladoraReferenciaAjuste,
+            etiqueta: 'precio de la trilladora del último ajuste'
+          };
+        }
+        return {
+          valor: pv.baseDelDia,
+          etiqueta: 'base del día'
+        };
+      }
+
+      // HU14 Esc. 2: Latest trilladora price registered on a given date (most recent hour)
+      function getUltimoPrecioTrilladoraDia(fechaStr) {
+        const delDia = state.preciosTrilladoraJornada
+          .filter(p => p.fecha === fechaStr)
+          .sort((a, b) => (b.hora || '').localeCompare(a.hora || '') || (b.timestamp || 0) - (a.timestamp || 0));
+        return delDia.length > 0 ? delDia[0] : null;
+      }
+
+      // HU14: Expected profit calculation (Jefa only)
+      function calcularUtilidadEsperada(carga, transportePorCarga = 0) {
+        if (!carga || !carga.muestra) return null;
+        const today = getTodayISO();
+        const ultimoTrill = getUltimoPrecioTrilladoraDia(today);
+        const precioRefCarga = ultimoTrill ? ultimoTrill.valorCarga : state.precioBaseVigente.baseDelDia;
+        const fuenteRef = ultimoTrill
+          ? `Último precio trilladora hoy (${ultimoTrill.hora} · ${ultimoTrill.trilladora})`
+          : `Base del día (${state.precioBaseVigente.trilladora})`;
+
+        const factorAprox = carga.muestra.factorAproximado;
+        const precioVentaKilo = (precioRefCarga / 125) * (1 + (94 - factorAprox) / 100);
+        const valorVentaEstimado = Math.round(precioVentaKilo * carga.kilosPagar);
+        const numCargas = carga.kilosPagar / 125;
+        const costoTransporte = Math.round(numCargas * Math.max(0, Number(transportePorCarga) || 0));
+        const pagoActual = carga.pagoTotal;
+        const utilidadTotal = valorVentaEstimado - pagoActual - costoTransporte;
+        const utilidadPorCarga = numCargas > 0 ? Math.round(utilidadTotal / numCargas) : 0;
+
+        return {
+          precioRefCarga,
+          fuenteRef,
+          precioVentaKilo: Math.round(precioVentaKilo),
+          valorVentaEstimado,
+          numCargas,
+          costoTransporte,
+          utilidadTotal,
+          utilidadPorCarga,
+          esPerdida: utilidadTotal < 0
+        };
+      }
+
+      // RN017 & HU20: Weekly average price & excelso-weighted factor
+      function calcularResumenCompras(comprasList) {
+        const totalKilos = comprasList.reduce((acc, c) => acc + Number(c.kilosPagar || 0), 0);
+        const totalPagado = comprasList.reduce((acc, c) => acc + Number(c.pagoTotal || 0), 0);
+        // Use exact unrounded excelso sum for maximum accuracy, matching Excel formula =D151*70/I151
+        const totalExcelsoExacto = comprasList.reduce((acc, c) => {
+          const f = c.muestra ? c.muestra.factorExacto : 0;
+          return acc + (f > 0 ? (Number(c.kilosPagar) / f) * 70 : 0);
+        }, 0);
+
+        const precioPromedioKilo = totalKilos > 0 ? totalPagado / totalKilos : 0;
+        const precioPromedioCarga = precioPromedioKilo * 125;
+        const factorComprado = totalExcelsoExacto > 0 ? (totalKilos * 70) / totalExcelsoExacto : 0;
+        const precioMetaVentaKilo = precioPromedioKilo * 1.03;
+        const precioMetaVentaCarga = precioPromedioCarga * 1.03;
+
+        return {
+          count: comprasList.length,
+          totalKilos: Number(totalKilos.toFixed(2)),
+          totalPagado: Math.round(totalPagado),
+          totalExcelso: Number(totalExcelsoExacto.toFixed(2)),
+          precioPromedioKilo: Math.round(precioPromedioKilo),
+          precioPromedioCarga: Math.round(precioPromedioCarga),
+          factorComprado: Number(factorComprado.toFixed(2)),
+          precioMetaVentaKilo: Math.round(precioMetaVentaKilo),
+          precioMetaVentaCarga: Math.round(precioMetaVentaCarga)
+        };
+      }
+
+      // ==================== UI HELPERS ====================
+      function getCurrentUser() {
+        return USERS.find(u => u.cedula === state.currentUserCedula) || null;
+      }
+
+      function isJefa() {
+        const u = getCurrentUser();
+        return u && u.rol === 'jefa';
+      }
+
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const colors = {
+          success: 'bg-cafetal-700 text-white border-cafetal-800',
+          error: 'bg-red-700 text-white border-red-800',
+          warning: 'bg-cosecha-600 text-white border-cosecha-600',
+          info: 'bg-espresso-900 text-white border-espresso-950'
+        };
+        const icons = { success: 'check-circle-2', error: 'alert-circle', warning: 'alert-triangle', info: 'info' };
+        const el = document.createElement('div');
+        el.className = `pointer-events-auto flex items-start gap-2.5 px-4 py-3 rounded-xl border shadow-lg text-xs sm:text-sm font-medium transition-all ${colors[type] || colors.info}`;
+        el.innerHTML = `<i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0 mt-0.5"></i><span class="flex-1">${escapeHtml(message)}</span>`;
+        container.appendChild(el);
+        refreshIcons({ nodes: [el] });
+        setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }, 4200);
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+      }
+
+      function openModal(html) {
+        const backdrop = document.getElementById('modal-backdrop');
+        const box = document.getElementById('modal-box');
+        box.innerHTML = html;
+        backdrop.classList.remove('hidden');
+        backdrop.classList.add('flex');
+        refreshIcons({ nodes: [box] });
+      }
+
+      function closeModal() {
+        const backdrop = document.getElementById('modal-backdrop');
+        backdrop.classList.add('hidden');
+        backdrop.classList.remove('flex');
+      }
+
+      document.getElementById('modal-backdrop').addEventListener('click', (e) => {
+        if (e.target.id === 'modal-backdrop') closeModal();
+      });
+
+      // ==================== MERCADO EN LÍNEA (HU04) ====================
+      // Convierte una fecha ISO a "AAAA-MM-DD HH:MM" en hora de Colombia.
+      function fmtFechaHoraBogota(iso) {
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return String(iso || '');
+        try {
+          const partes = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+          }).formatToParts(d);
+          const p = (tipo) => (partes.find(x => x.type === tipo) || {}).value;
+          return `${p('year')}-${p('month')}-${p('day')} ${p('hour')}:${p('minute')}`;
+        } catch (e) {
+          return d.toISOString().slice(0, 16).replace('T', ' ');
+        }
+      }
+
+      // Lee bolsa.json, que actualiza el proceso programado de GitHub Actions.
+      async function consultarBolsa() {
+        for (const url of BOLSA_URLS) {
+          try {
+            const resp = await fetch(`${url}?t=${Date.now()}`);
+            if (!resp.ok) continue;
+            const d = await resp.json();
+            const precio = Number(d && d.precio);
+            const anterior = Number(d && d.cierreAnterior);
+            if (precio > 0 && anterior > 0) return { ...d, precio, cierreAnterior: anterior };
+          } catch (e) { /* se prueba la siguiente fuente */ }
+        }
+        throw new Error('No se pudo leer bolsa.json');
+      }
+
+      // Consulta la TRM vigente hoy y la anterior en datos.gov.co.
+      async function consultarTRM() {
+        const params = new URLSearchParams({
+          '$where': `vigenciadesde <= '${getTodayISO()}T00:00:00.000'`,
+          '$order': 'vigenciadesde DESC',
+          '$limit': '2'
+        });
+        const resp = await fetch(`${TRM_URL}?${params.toString()}`);
+        if (!resp.ok) throw new Error(`TRM HTTP ${resp.status}`);
+        const filas = await resp.json();
+        if (!Array.isArray(filas) || filas.length === 0 || !(Number(filas[0].valor) > 0)) {
+          throw new Error('TRM sin datos');
+        }
+        return { actual: filas[0], anterior: filas[1] || null };
+      }
+
+      let mercadoEnCurso = null;
+      // Consulta la bolsa y el dólar al tiempo. Devuelve la lista de lo que no se pudo consultar.
+      function actualizarMercado() {
+        if (!mercadoEnCurso) {
+          mercadoEnCurso = consultarMercado().finally(() => { mercadoEnCurso = null; });
+        }
+        return mercadoEnCurso;
+      }
+
+      async function consultarMercado() {
+        const [bolsa, trm] = await Promise.allSettled([consultarBolsa(), consultarTRM()]);
+        const m = state.mercado;
+        const fallas = [];
+
+        if (bolsa.status === 'fulfilled') {
+          const b = bolsa.value;
+          m.bolsaNY = b.precio;
+          m.bolsaNYAnterior = b.cierreAnterior;
+          m.bolsaEtiquetaAnterior = 'Cierre anterior';
+          m.bolsaContrato = b.contrato || null;
+          m.bolsaHora = fmtFechaHoraBogota(b.horaDelDato);
+          m.bolsaFuente = b.fuente || 'Yahoo Finance';
+        } else {
+          fallas.push('la bolsa');
+        }
+
+        if (trm.status === 'fulfilled') {
+          const { actual, anterior } = trm.value;
+          m.dolarTRM = Number(actual.valor);
+          m.dolarTRMAnterior = anterior ? Number(anterior.valor) : Number(actual.valor);
+          m.dolarEtiquetaAnterior = 'TRM anterior';
+          m.dolarHora = `vigente desde ${String(actual.vigenciadesde || '').slice(0, 10)}`;
+          m.dolarFuente = 'TRM oficial (datos.gov.co)';
+        } else {
+          fallas.push('el dólar');
+        }
+
+        m.ultimaConsulta = `${getTodayISO()} ${getNowTime()}`;
+        saveState();
+        renderMarketTicker();
+        return fallas;
+      }
+
+      function textoUltimaConsulta() {
+        return `Última consulta: ${state.mercado.ultimaConsulta || 'en curso…'}`;
+      }
+
+      // Tarjetas de la bolsa y el dólar. Se vuelven a pintar solas, sin tocar los formularios.
+      function marketTickerHTML() {
+        const m = state.mercado;
+        const diffBolsa = Number((m.bolsaNY - m.bolsaNYAnterior).toFixed(2));
+        const diffDolar = Number((m.dolarTRM - m.dolarTRMAnterior).toFixed(2));
+        return `
+            <div class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wide text-stone-500">Bolsa de Nueva York (Café C)</span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full ${diffBolsa >= 0 ? 'bg-cafetal-50 text-cafetal-700' : 'bg-red-50 text-red-700'} tabular-nums">
+                  ${diffBolsa >= 0 ? '+' : '−'}${fmtNum(Math.abs(diffBolsa), 2)} ¢
+                </span>
+              </div>
+              <p class="text-2xl font-extrabold text-espresso-950 mt-2 tabular-nums">${fmtNum(m.bolsaNY, 2)} <span class="text-xs font-medium text-stone-500">¢ USD/lb</span></p>
+              <p class="text-[11px] text-stone-500 mt-1">${escapeHtml(m.bolsaEtiquetaAnterior)}: ${fmtNum(m.bolsaNYAnterior, 2)} ¢ · Dato: ${escapeHtml(m.bolsaHora)}</p>
+              <p class="text-[10px] text-stone-400 mt-0.5">${escapeHtml(m.bolsaFuente)}${m.bolsaContrato ? ` · contrato ${escapeHtml(m.bolsaContrato)}` : ''}</p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold uppercase tracking-wide text-stone-500">Dólar (TRM Colombia)</span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full ${diffDolar >= 0 ? 'bg-cafetal-50 text-cafetal-700' : 'bg-red-50 text-red-700'} tabular-nums">
+                  ${diffDolar >= 0 ? '+' : '−'}$${fmtNum(Math.abs(diffDolar), 2)}
+                </span>
+              </div>
+              <p class="text-2xl font-extrabold text-espresso-950 mt-2 tabular-nums">$${fmtNum(m.dolarTRM, 2)} <span class="text-xs font-medium text-stone-500">COP</span></p>
+              <p class="text-[11px] text-stone-500 mt-1">${escapeHtml(m.dolarEtiquetaAnterior)}: $${fmtNum(m.dolarTRMAnterior, 2)} · ${escapeHtml(m.dolarHora)}</p>
+              <p class="text-[10px] text-stone-400 mt-0.5">${escapeHtml(m.dolarFuente)}</p>
+            </div>
+        `;
+      }
+
+      function renderMarketTicker() {
+        const el = document.getElementById('market-ticker');
+        if (el) el.innerHTML = marketTickerHTML();
+        const ultima = document.getElementById('market-ultima-consulta');
+        if (ultima) ultima.textContent = textoUltimaConsulta();
+      }
+
+      // ==================== NAVIGATION & SHELL ====================
+      function getNavItems() {
+        const items = [
+          { id: 'tasacion', label: 'Tasación y Cotización', icon: 'scale', badge: 'HU06–18', roles: ['jefa', 'catadora'] },
+          { id: 'tabla_precios', label: 'Tabla de Precios por Factor', icon: 'table-2', badge: 'HU03', roles: ['jefa', 'catadora'] },
+          { id: 'compras', label: 'Compras y Cotizaciones', icon: 'clipboard-check', badge: 'HU17–18', roles: ['jefa', 'catadora'] },
+          { id: 'pasilla', label: 'Planilla de Pasilla', icon: 'package', badge: 'HU19', roles: ['jefa', 'catadora'] },
+          { id: 'agricultores', label: 'Historial de Agricultores', icon: 'users', badge: 'HU07', roles: ['jefa', 'catadora'] }
+        ];
+        if (isJefa()) {
+          items.unshift({ id: 'precio_base', label: 'Precio Base y Bolsa', icon: 'trending-up', badge: 'HU01–05', roles: ['jefa'] });
+          items.push({ id: 'resumen_semanal', label: 'Promedio y Factor (Venta)', icon: 'bar-chart-3', badge: 'HU20', roles: ['jefa'] });
+        }
+        if (MODO_SOLO_PRECIO_BASE) {
+          return items.filter(i => i.id === 'precio_base');
+        }
+        return items;
+      }
+
+      function renderShell() {
+        if (MODO_SOLO_PRECIO_BASE) {
+          state.currentUserCedula = '43810200';
+          state.activeTab = 'precio_base';
+        }
+        const logoutBtn = document.getElementById('btn-logout');
+        if (logoutBtn) logoutBtn.classList.toggle('hidden', MODO_SOLO_PRECIO_BASE);
+        const user = getCurrentUser();
+        const loginView = document.getElementById('login-view');
+        const appShell = document.getElementById('app-shell');
+
+        if (!user) {
+          loginView.classList.remove('hidden');
+          appShell.classList.add('hidden');
+          refreshIcons();
+          return;
+        }
+
+        loginView.classList.add('hidden');
+        appShell.classList.remove('hidden');
+
+        // Ensure activeTab is allowed for role
+        const navItems = getNavItems();
+        if (!navItems.some(i => i.id === state.activeTab)) {
+          state.activeTab = navItems[0].id;
+        }
+
+        document.getElementById('user-avatar').textContent = user.iniciales;
+        document.getElementById('user-name-label').textContent = user.nombre;
+        document.getElementById('user-role-label').textContent = `${user.rolLabel} · ${user.sede}`;
+
+        // Render Sidebar Nav
+        const navEl = document.getElementById('sidebar-nav');
+        navEl.innerHTML = navItems.map(item => `
+          <button type="button" data-tab="${item.id}" class="nav-item w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl text-left cursor-pointer ${state.activeTab === item.id ? 'active' : ''}">
+            <span class="flex items-center gap-2.5 min-w-0">
+              <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0"></i>
+              <span class="truncate">${item.label}</span>
+            </span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-parchment-200 shrink-0">${item.badge}</span>
+          </button>
+        `).join('');
+
+        navEl.querySelectorAll('[data-tab]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.activeTab = btn.dataset.tab;
+            saveState();
+            closeMobileSidebar();
+            renderShell();
+          });
+        });
+
+        // Update Top Banner (HU03)
+        const pv = state.precioBaseVigente;
+        document.getElementById('banner-base-carga').textContent = fmtCOP(pv.valorCarga);
+        document.getElementById('banner-base-kilo').textContent = `${fmtCOP(pv.valorKilo)}/kg`;
+        document.getElementById('banner-base-meta').textContent = `${pv.tipo} (${pv.fecha} ${pv.hora}) por ${pv.usuario} · Base del día: ${fmtCOP(pv.baseDelDia)}`;
+
+        // Update Global Drop Alert (HU04 -> HU05)
+        updateGlobalDropAlert();
+
+        // Render active view
+        renderActiveView();
+        refreshIcons();
+      }
+
+      function updateGlobalDropAlert() {
+        const alertBar = document.getElementById('global-drop-alert');
+        if (!isJefa()) {
+          alertBar.classList.add('hidden');
+          return;
+        }
+        const today = getTodayISO();
+        const ultimo = getUltimoPrecioTrilladoraDia(today);
+        if (!ultimo) {
+          alertBar.classList.add('hidden');
+          return;
+        }
+        const ref = getReferenciaTrilladoraActual();
+        const diff = ultimo.valorCarga - ref.valor;
+        if (diff <= -20000) {
+          document.getElementById('global-drop-alert-text').textContent =
+            `Alerta de mercado (HU04): El precio de ${ultimo.trilladora} (${fmtCOP(ultimo.valorCarga)}) bajó ${fmtCOP(Math.abs(diff))} frente a ${ref.etiqueta} (${fmtCOP(ref.valor)}). Se recomienda ajustar el precio base.`;
+          alertBar.classList.remove('hidden');
+        } else {
+          alertBar.classList.add('hidden');
+        }
+      }
+
+      document.getElementById('global-drop-alert-btn').addEventListener('click', () => {
+        if (!isJefa()) return;
+        state.activeTab = 'precio_base';
+        saveState();
+        renderShell();
+        setTimeout(() => {
+          const el = document.getElementById('card-ajustar-precio');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      });
+
+      // Mobile sidebar toggles
+      function closeMobileSidebar() {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+        document.getElementById('mobile-overlay').classList.add('hidden');
+      }
+      document.getElementById('open-sidebar-btn').addEventListener('click', () => {
+        document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('mobile-overlay').classList.remove('hidden');
+      });
+      document.getElementById('close-sidebar-btn').addEventListener('click', closeMobileSidebar);
+      document.getElementById('mobile-overlay').addEventListener('click', closeMobileSidebar);
+
+      // ==================== LOGIN HANDLERS (HU21) ====================
+      document.getElementById('login-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const ced = document.getElementById('login-cedula').value.trim();
+        const pwd = document.getElementById('login-password').value;
+        const errEl = document.getElementById('login-error');
+
+        if (!isValidCedula(ced)) {
+          errEl.textContent = 'La cédula debe contener solo números (máximo 10 dígitos, sin puntos ni espacios).';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        const user = USERS.find(u => u.cedula === ced && u.password === pwd);
+        if (!user) {
+          errEl.textContent = 'Cédula o contraseña incorrectas. Verifica tus credenciales o usa un acceso de prueba.';
+          errEl.classList.remove('hidden');
+          return;
+        }
+        errEl.classList.add('hidden');
+        state.currentUserCedula = user.cedula;
+        state.activeTab = user.rol === 'jefa' ? 'precio_base' : 'tasacion';
+        saveState();
+        showToast(`Bienvenida, ${user.nombre} (${user.sede}).`, 'success');
+        renderShell();
+      });
+
+      document.getElementById('quick-login-jefa').addEventListener('click', () => {
+        document.getElementById('login-cedula').value = '43810200';
+        document.getElementById('login-password').value = 'miorigen2026';
+        document.getElementById('login-form').requestSubmit();
+      });
+
+      document.getElementById('quick-login-encargada').addEventListener('click', () => {
+        document.getElementById('login-cedula').value = '10203040';
+        document.getElementById('login-password').value = 'pantanillo2026';
+        document.getElementById('login-form').requestSubmit();
+      });
+
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        state.currentUserCedula = null;
+        saveState();
+        renderShell();
+      });
+
+      document.getElementById('btn-reset-demo').addEventListener('click', () => {
+        openModal(`
+          <div class="p-6">
+            <h3 class="text-lg font-bold text-espresso-950">Reiniciar datos de prueba</h3>
+            <p class="text-sm text-stone-600 mt-2">Se restaurarán los registros iniciales de ejemplo (base del día, cargas, compras y pasilla) para volver a probar todos los escenarios del sistema.</p>
+            <div class="mt-5 flex justify-end gap-2.5">
+              <button type="button" id="cancel-reset" class="px-4 py-2 rounded-xl border border-parchment-300 text-sm font-medium text-espresso-900 hover:bg-parchment-100 cursor-pointer">Cancelar</button>
+              <button type="button" id="confirm-reset" class="px-4 py-2 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-sm font-semibold cursor-pointer">Sí, reiniciar datos</button>
+            </div>
+          </div>
+        `);
+        document.getElementById('cancel-reset').addEventListener('click', closeModal);
+        document.getElementById('confirm-reset').addEventListener('click', () => {
+          const currentCed = state.currentUserCedula;
+          const currentTab = state.activeTab;
+          state = buildInitialState();
+          state.currentUserCedula = currentCed;
+          state.activeTab = currentTab;
+          saveState();
+          closeModal();
+          showToast('Datos de prueba restaurados correctamente.', 'info');
+          renderShell();
+          // La bolsa y el dólar vuelven a los valores en línea, no a los de ejemplo.
+          actualizarMercado();
+        });
+      });
+
+      // ==================== VIEW ROUTER ====================
+      function renderActiveView() {
+        const main = document.getElementById('main-content');
+        const titleEl = document.getElementById('page-title');
+        const subEl = document.getElementById('page-subtitle');
+
+        if (farmerChartInstance) {
+          farmerChartInstance.destroy();
+          farmerChartInstance = null;
+        }
+
+        switch (state.activeTab) {
+          case 'precio_base':
+            titleEl.textContent = 'Precio Base Diario, Bolsa y Ajustes';
+            subEl.textContent = 'Control exclusivo de la Jefa · Sincronización inmediata en Abejorral y Pantanillo (HU01–HU05)';
+            renderPrecioBaseView(main);
+            break;
+          case 'tasacion':
+            titleEl.textContent = 'Tasación de Muestra y Cotización';
+            subEl.textContent = 'Registro de carga, análisis físico, factor automático y decisión del agricultor (HU06–HU18)';
+            renderTasacionView(main);
+            break;
+          case 'tabla_precios':
+            titleEl.textContent = 'Tabla de Valores Unitarios por Factor';
+            subEl.textContent = 'Referencia transparente del día para los caficultores en ambas sedes (HU03 · RN007)';
+            renderTablaPreciosView(main);
+            break;
+          case 'compras':
+            titleEl.textContent = 'Registro de Compras y Cotizaciones';
+            subEl.textContent = 'Planilla digital de Café Pergamino · Factor y kilos inmutables al confirmar compra (HU17–HU18)';
+            renderComprasView(main);
+            break;
+          case 'pasilla':
+            titleEl.textContent = 'Planilla Independiente de Pasilla';
+            subEl.textContent = 'Registro separado de café pasilla asociado por cédula al agricultor (HU19 · RN013)';
+            renderPasillaView(main);
+            break;
+          case 'agricultores':
+            titleEl.textContent = 'Historial de Calidad por Agricultor';
+            subEl.textContent = 'Trazabilidad de compras, factores, humedad, defectos y recomendaciones (HU07)';
+            renderAgricultoresView(main);
+            break;
+          case 'resumen_semanal':
+            titleEl.textContent = 'Promedio y Factor del Café Comprado';
+            subEl.textContent = 'Consolidado por sede para negociar la venta a las trilladoras sin pérdidas (HU20 · RN014/RN015/RN017)';
+            renderResumenSemanalView(main);
+            break;
+        }
+      }
+
+      // ==================== VIEW 1: PRECIO BASE Y BOLSA (HU01 - HU05, JEFA ONLY) ====================
+      function renderPrecioBaseView(container) {
+        if (!isJefa()) {
+          container.innerHTML = `<div class="bg-white p-6 rounded-2xl border border-red-200 text-red-700 text-sm">Acceso restringido: solo la Jefa puede gestionar el precio base y la bolsa (RN004).</div>`;
+          return;
+        }
+
+        const pv = state.precioBaseVigente;
+        const today = getTodayISO();
+        const ultimoTrill = getUltimoPrecioTrilladoraDia(today);
+        const refTrill = getReferenciaTrilladoraActual();
+        const propuestoAjuste = ultimoTrill
+          ? Math.max(1000, ultimoTrill.valorCarga - pv.margen)
+          : pv.valorCarga;
+
+        container.innerHTML = `
+          <!-- Market Ticker (HU04) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div id="market-ticker" class="contents">${marketTickerHTML()}</div>
+
+            <div class="bg-espresso-900 text-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div>
+                <span class="text-xs font-semibold uppercase tracking-wide text-parchment-300">Consulta en línea (HU04)</span>
+                <p class="text-xs text-parchment-200/90 mt-1.5">La bolsa y la TRM se consultan solas al abrir la página y cada 5 minutos. Usa «Manual» si no hay conexión.</p>
+                <p id="market-ultima-consulta" class="text-[11px] text-parchment-300/80 mt-1.5">${textoUltimaConsulta()}</p>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button type="button" id="btn-fetch-market" class="flex-1 px-3 py-2 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Actualizar mercado
+                </button>
+                <button type="button" id="btn-edit-market" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold cursor-pointer">
+                  Manual
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Forms Grid: HU01 + HU02 (Left) | HU04 Trilladora + HU05 Ajuste (Right) -->
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <!-- HU01 & HU02 -->
+            <div class="space-y-6">
+              <section class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="text-base font-bold text-espresso-950">1. Registrar Base del Día al Cierre</h3>
+                    <p class="text-xs text-stone-500">HU01 · Una sola base por fecha de cierre (3:00–3:30 p. m.) para ambas sedes.</p>
+                  </div>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-parchment-100 text-espresso-800">RN001</span>
+                </div>
+                <form id="form-base-dia" class="space-y-3.5" novalidate>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label for="base-fecha" class="block text-xs font-semibold text-espresso-900 mb-1">Fecha de cierre *</label>
+                      <input id="base-fecha" type="date" value="${today}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    </div>
+                    <div>
+                      <label for="base-trilladora" class="block text-xs font-semibold text-espresso-900 mb-1">Trilladora que mejor paga *</label>
+                      <input id="base-trilladora" type="text" placeholder="Ej. Trilladora del Oriente" value="Trilladora del Oriente" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    </div>
+                  </div>
+                  <div>
+                    <label for="base-valor" class="block text-xs font-semibold text-espresso-900 mb-1">Base del día por carga de 125 kg (COP) *</label>
+                    <input id="base-valor" type="text" inputmode="numeric" placeholder="Ej. 2100000" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                  </div>
+                  <div id="base-dia-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+                  <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-sm font-semibold cursor-pointer">
+                    Guardar base del día
+                  </button>
+                </form>
+              </section>
+
+              <section class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="text-base font-bold text-espresso-950">2. Fijar Precio Base por Carga</h3>
+                    <p class="text-xs text-stone-500">HU02 · Base del día menos margen (por lo general $50.000). Rige en ambas sedes y fines de semana.</p>
+                  </div>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-parchment-100 text-espresso-800">RN002</span>
+                </div>
+                <form id="form-fijar-precio" class="space-y-3.5" novalidate>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label for="fijar-base-select" class="block text-xs font-semibold text-espresso-900 mb-1">Base del día registrada</label>
+                      <select id="fijar-base-select" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cafetal-600">
+                        ${state.basesDia.slice().reverse().map(b => `<option value="${b.id}">${b.fechaCierre} · ${escapeHtml(b.trilladora)} (${fmtCOP(b.valorCarga)})</option>`).join('')}
+                      </select>
+                    </div>
+                    <div>
+                      <label for="fijar-margen" class="block text-xs font-semibold text-espresso-900 mb-1">Margen del día por carga (COP) *</label>
+                      <input id="fijar-margen" type="text" inputmode="numeric" value="${pv.margen}" placeholder="Ej. 50000" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    </div>
+                  </div>
+                  <div id="preview-fijar" class="bg-cafetal-50/70 border border-cafetal-100 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span class="text-cafetal-800 font-medium">Cálculo previo:</span>
+                    <span id="preview-fijar-val" class="font-bold text-cafetal-800 tabular-nums">—</span>
+                  </div>
+                  <div id="fijar-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+                  <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-sm font-semibold cursor-pointer">
+                    Calcular y publicar en las dos sedes
+                  </button>
+                </form>
+              </section>
+            </div>
+
+            <!-- HU04 Trilladora + HU05 Ajuste -->
+            <div class="space-y-6">
+              <section class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="text-base font-bold text-espresso-950">3. Precio de Trilladora durante la Jornada</h3>
+                    <p class="text-xs text-stone-500">HU04 · Compara frente a ${refTrill.etiqueta} (${fmtCOP(refTrill.valor)}). Avisa si baja $20.000 o más.</p>
+                  </div>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-cosecha-50 text-cosecha-600">RN003</span>
+                </div>
+                <form id="form-trilladora-jornada" class="space-y-3.5" novalidate>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="sm:col-span-1">
+                      <label for="trill-hora" class="block text-xs font-semibold text-espresso-900 mb-1">Hora</label>
+                      <input id="trill-hora" type="time" value="${getNowTime()}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <label for="trill-nombre" class="block text-xs font-semibold text-espresso-900 mb-1">Trilladora *</label>
+                      <input id="trill-nombre" type="text" value="${escapeHtml(pv.trilladora)}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    </div>
+                  </div>
+                  <div>
+                    <label for="trill-valor" class="block text-xs font-semibold text-espresso-900 mb-1">Precio informado por carga (COP) *</label>
+                    <input id="trill-valor" type="text" inputmode="numeric" placeholder="Ej. 2080000" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                  </div>
+                  <div id="trill-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+                  <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cosecha-600 hover:bg-cosecha-500 text-white text-sm font-semibold cursor-pointer">
+                    Registrar precio de trilladora
+                  </button>
+                </form>
+
+                ${state.preciosTrilladoraJornada.length > 0 ? `
+                  <div class="mt-4 pt-4 border-t border-parchment-200">
+                    <p class="text-xs font-semibold text-stone-600 mb-2">Registros de trilladora en jornada:</p>
+                    <div class="space-y-1.5 max-h-36 overflow-y-auto">
+                      ${state.preciosTrilladoraJornada.slice().reverse().map(t => `
+                        <div class="flex items-center justify-between text-xs bg-parchment-50 rounded-lg px-3 py-2 border border-parchment-200">
+                          <div>
+                            <span class="font-semibold text-espresso-900">${escapeHtml(t.trilladora)}</span>
+                            <span class="text-stone-500 ml-1.5">${t.fecha} ${t.hora}</span>
+                          </div>
+                          <div class="flex items-center gap-2 tabular-nums">
+                            <span class="font-bold text-espresso-950">${fmtCOP(t.valorCarga)}</span>
+                            <span class="px-1.5 py-0.5 rounded font-semibold ${t.diferencia <= -20000 ? 'bg-red-100 text-red-700' : (t.diferencia < 0 ? 'bg-amber-100 text-amber-800' : 'bg-cafetal-100 text-cafetal-800')}">
+                              ${t.diferencia >= 0 ? '+' : ''}${fmtCOP(t.diferencia)}
+                            </span>
+                          </div>
+                        </div>
+                      `).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+              </section>
+
+              <section id="card-ajustar-precio" class="bg-white rounded-2xl border-2 border-parchment-300 p-5 sm:p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 class="text-base font-bold text-espresso-950">4. Ajustar el Precio de Compra</h3>
+                    <p class="text-xs text-stone-500">HU05 · Propone último precio de trilladora menos margen (${fmtCOP(pv.margen)}). Editable ante competencia. Las cotizaciones previas conservan su precio.</p>
+                  </div>
+                  <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-red-50 text-red-700">HU05</span>
+                </div>
+                <form id="form-ajustar-precio" class="space-y-3.5" novalidate>
+                  <div class="bg-parchment-100 rounded-xl p-3 text-xs flex flex-wrap justify-between gap-2">
+                    <span class="text-stone-600">Precio base propuesto por el sistema:</span>
+                    <span class="font-extrabold text-espresso-950 tabular-nums">${fmtCOP(propuestoAjuste)} (${fmtCOP(propuestoAjuste / 125)}/kg)</span>
+                  </div>
+                  <div>
+                    <label for="ajuste-valor" class="block text-xs font-semibold text-espresso-900 mb-1">Nuevo precio base por carga (COP) *</label>
+                    <input id="ajuste-valor" type="text" inputmode="numeric" value="${propuestoAjuste}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                  </div>
+                  <div>
+                    <label for="ajuste-motivo" class="block text-xs font-semibold text-espresso-900 mb-1">Motivo del ajuste (opcional)</label>
+                    <input id="ajuste-motivo" type="text" placeholder="Ej. Bajada de bolsa / Competencia Federación" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                  </div>
+                  <div id="ajuste-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+                  <button type="submit" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-sm font-semibold cursor-pointer">
+                    Aplicar ajuste en Abejorral y Pantanillo
+                  </button>
+                </form>
+              </section>
+            </div>
+          </div>
+
+          <!-- Audit Log of Base Prices -->
+          <section class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs">
+            <h3 class="text-sm font-bold text-espresso-950 mb-3">Historial de Cambios del Precio Base (Auditoría RN001 / RN003)</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-parchment-200 text-stone-500">
+                    <th class="py-2 pr-3 font-semibold">Fecha y hora</th>
+                    <th class="py-2 pr-3 font-semibold">Tipo</th>
+                    <th class="py-2 pr-3 font-semibold">Precio Base / Carga</th>
+                    <th class="py-2 pr-3 font-semibold">Valor / Kilo</th>
+                    <th class="py-2 pr-3 font-semibold">Usuario</th>
+                    <th class="py-2 font-semibold">Detalle</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-parchment-100">
+                  ${state.historialPreciosBase.slice().reverse().map((h, idx) => `
+                    <tr class="${idx === 0 ? 'bg-cafetal-50/40 font-medium' : ''}">
+                      <td class="py-2.5 pr-3 tabular-nums whitespace-nowrap">${h.fecha} · ${h.hora}</td>
+                      <td class="py-2.5 pr-3"><span class="px-2 py-0.5 rounded-md ${idx === 0 ? 'bg-cafetal-100 text-cafetal-800 font-semibold' : 'bg-parchment-100 text-stone-700'}">${escapeHtml(h.tipo)}</span></td>
+                      <td class="py-2.5 pr-3 font-bold tabular-nums">${fmtCOP(h.valorCarga)}</td>
+                      <td class="py-2.5 pr-3 tabular-nums">${fmtCOP(h.valorKilo)}</td>
+                      <td class="py-2.5 pr-3">${escapeHtml(h.usuario)}</td>
+                      <td class="py-2.5 text-stone-500">${escapeHtml(h.motivo || '—')}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        `;
+
+        // Bind live preview for HU02
+        const baseSelect = document.getElementById('fijar-base-select');
+        const margenInput = document.getElementById('fijar-margen');
+        function updateFijarPreview() {
+          const b = state.basesDia.find(x => x.id === baseSelect.value);
+          const marg = Number(margenInput.value.replace(/[^\d.-]/g, ''));
+          const out = document.getElementById('preview-fijar-val');
+          if (!b || isNaN(marg) || marg <= 0 || marg >= b.valorCarga) {
+            out.textContent = 'Ingresa un margen válido (> $0 y menor a la base)';
+            return;
+          }
+          const pb = b.valorCarga - marg;
+          out.textContent = `${fmtCOP(pb)} / carga · ${fmtCOP(pb / 125)} / kg`;
+        }
+        baseSelect.addEventListener('change', updateFijarPreview);
+        margenInput.addEventListener('input', updateFijarPreview);
+        updateFijarPreview();
+
+        // Bind HU01 submit
+        document.getElementById('form-base-dia').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fecha = document.getElementById('base-fecha').value.trim();
+          const trill = document.getElementById('base-trilladora').value.trim();
+          const rawVal = document.getElementById('base-valor').value.trim();
+          const errEl = document.getElementById('base-dia-error');
+          errEl.classList.add('hidden');
+
+          const faltantes = [];
+          if (!fecha) faltantes.push('Fecha de cierre');
+          if (!trill) faltantes.push('Trilladora');
+          if (!rawVal) faltantes.push('Valor de la base');
+
+          if (faltantes.length > 0) {
+            errEl.textContent = `Completa los campos obligatorios: ${faltantes.join(', ')}.`;
+            errEl.classList.remove('hidden');
+            return;
+          }
+          if (!/^\d+(\.\d+)?$/.test(rawVal) || Number(rawVal) <= 0) {
+            errEl.textContent = 'El valor de la base debe ser un número mayor que $0 (sin letras ni signos negativos).';
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          // HU01 Escenario 3: Only one base per closing date
+          const existe = state.basesDia.find(b => b.fechaCierre === fecha);
+          if (existe) {
+            errEl.innerHTML = `
+              <p class="font-semibold">Ya existe una base del día registrada para el cierre del ${fecha} (${fmtCOP(existe.valorCarga)} · ${escapeHtml(existe.trilladora)}) para las dos sedes.</p>
+              <p class="mt-1">La única forma de modificar el precio antes del siguiente cierre es usar «Ajustar el precio de compra».</p>
+              <button type="button" id="btn-goto-ajuste" class="mt-2 px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold cursor-pointer">Abrir «Ajustar el precio de compra»</button>
+            `;
+            errEl.classList.remove('hidden');
+            document.getElementById('btn-goto-ajuste').addEventListener('click', () => {
+              document.getElementById('card-ajustar-precio').scrollIntoView({ behavior: 'smooth', block: 'center' });
+              document.getElementById('ajuste-valor').focus();
+            });
+            return;
+          }
+
+          const nuevo = {
+            id: `BASE-${Date.now()}`,
+            fechaCierre: fecha,
+            hora: getNowTime(),
+            trilladora: trill,
+            valorCarga: Number(rawVal),
+            usuario: getCurrentUser().nombre
+          };
+          state.basesDia.push(nuevo);
+          saveState();
+          showToast(`Base del día registrada: ${fmtCOP(nuevo.valorCarga)} (${nuevo.trilladora}).`, 'success');
+          renderShell();
+        });
+
+        // Bind HU02 submit
+        document.getElementById('form-fijar-precio').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const b = state.basesDia.find(x => x.id === baseSelect.value);
+          const rawMargen = margenInput.value.trim();
+          const errEl = document.getElementById('fijar-error');
+          errEl.classList.add('hidden');
+
+          if (!b) {
+            errEl.textContent = 'Primero debes registrar una base del día.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+          if (!rawMargen || !/^\d+(\.\d+)?$/.test(rawMargen) || Number(rawMargen) <= 0 || Number(rawMargen) >= b.valorCarga) {
+            errEl.textContent = `El margen es obligatorio y debe ser un número mayor que $0 y menor que la base del día (${fmtCOP(b.valorCarga)}).`;
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          const margen = Number(rawMargen);
+          const valorCarga = b.valorCarga - margen;
+          const valorKilo = Math.round(valorCarga / 125);
+          const now = getNowTime();
+          const todayDate = getTodayISO();
+
+          state.precioBaseVigente = {
+            id: `PB-${Date.now()}`,
+            baseDiaId: b.id,
+            fechaCierreOrigen: b.fechaCierre,
+            fecha: todayDate,
+            hora: now,
+            trilladora: b.trilladora,
+            baseDelDia: b.valorCarga,
+            margen,
+            valorCarga,
+            valorKilo,
+            usuario: getCurrentUser().nombre,
+            tipo: 'Fijación de cierre',
+            motivo: `Base ${fmtCOP(b.valorCarga)} − margen ${fmtCOP(margen)}`,
+            precioTrilladoraReferenciaAjuste: null
+          };
+          state.historialPreciosBase.push({ ...state.precioBaseVigente });
+          saveState();
+          showToast(`Precio base publicado en ambas sedes: ${fmtCOP(valorCarga)}/carga (${fmtCOP(valorKilo)}/kg).`, 'success');
+          renderShell();
+        });
+
+        // Bind HU04 Trilladora submit
+        document.getElementById('form-trilladora-jornada').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const hora = document.getElementById('trill-hora').value || getNowTime();
+          const trill = document.getElementById('trill-nombre').value.trim();
+          const rawVal = document.getElementById('trill-valor').value.trim();
+          const errEl = document.getElementById('trill-error');
+          errEl.classList.add('hidden');
+
+          if (!trill || !rawVal || !/^\d+(\.\d+)?$/.test(rawVal) || Number(rawVal) <= 0) {
+            errEl.textContent = 'Ingresa la trilladora y un precio numérico mayor que $0.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          const val = Number(rawVal);
+          const ref = getReferenciaTrilladoraActual();
+          const diff = val - ref.valor;
+
+          state.preciosTrilladoraJornada.push({
+            id: `TR-${Date.now()}`,
+            fecha: getTodayISO(),
+            hora,
+            timestamp: Date.now(),
+            trilladora: trill,
+            valorCarga: val,
+            diferencia: diff,
+            referenciaComparada: ref.valor,
+            usuario: getCurrentUser().nombre
+          });
+          saveState();
+
+          if (diff <= -20000) {
+            showToast(`¡Aviso! Bajó ${fmtCOP(Math.abs(diff))} frente a ${ref.etiqueta}. Abre «Ajustar el precio de compra».`, 'warning');
+          } else if (diff > 0) {
+            showToast(`Precio registrado (+${fmtCOP(diff)}). Cuando sube, se espera al cierre de bolsa.`, 'info');
+          } else {
+            showToast(`Precio registrado (${fmtCOP(diff)} frente a ${ref.etiqueta}). Sin alerta de ajuste.`, 'success');
+          }
+          renderShell();
+        });
+
+        // Bind HU05 Ajuste submit
+        document.getElementById('form-ajustar-precio').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const rawVal = document.getElementById('ajuste-valor').value.trim();
+          const motivo = document.getElementById('ajuste-motivo').value.trim();
+          const errEl = document.getElementById('ajuste-error');
+          errEl.classList.add('hidden');
+
+          if (!rawVal || !/^\d+(\.\d+)?$/.test(rawVal) || Number(rawVal) <= 0) {
+            errEl.textContent = 'El precio base es obligatorio y debe ser un número mayor que $0.';
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          const valorCarga = Number(rawVal);
+          const valorKilo = Math.round(valorCarga / 125);
+          const ultimo = getUltimoPrecioTrilladoraDia(getTodayISO());
+          const now = getNowTime();
+
+          state.precioBaseVigente = {
+            ...state.precioBaseVigente,
+            id: `PB-${Date.now()}`,
+            fecha: getTodayISO(),
+            hora: now,
+            valorCarga,
+            valorKilo,
+            usuario: getCurrentUser().nombre,
+            tipo: 'Ajuste en jornada',
+            motivo: motivo || 'Ajuste por movimiento de bolsa / competencia',
+            precioTrilladoraReferenciaAjuste: ultimo ? ultimo.valorCarga : state.precioBaseVigente.precioTrilladoraReferenciaAjuste
+          };
+          state.historialPreciosBase.push({ ...state.precioBaseVigente });
+          saveState();
+          showToast(`Precio base ajustado a ${fmtCOP(valorCarga)} (${fmtCOP(valorKilo)}/kg) en ambas sedes.`, 'success');
+          renderShell();
+        });
+
+        // Bind HU04: consulta en línea de la bolsa (bolsa.json) y de la TRM (datos.gov.co)
+        document.getElementById('btn-fetch-market').addEventListener('click', async () => {
+          const btn = document.getElementById('btn-fetch-market');
+          btn.disabled = true;
+          btn.textContent = 'Consultando...';
+          const fallas = await actualizarMercado();
+          const m = state.mercado;
+          if (fallas.length === 0) {
+            showToast(`Mercado actualizado: bolsa ${fmtNum(m.bolsaNY, 2)} ¢/lb (dato de ${m.bolsaHora}) y TRM $${fmtNum(m.dolarTRM, 2)}.`, 'success');
+          } else {
+            showToast(`No se pudo consultar ${fallas.join(' ni ')}. Se muestran los últimos valores guardados; puedes usar «Manual».`, 'warning');
+          }
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Actualizar mercado';
+          refreshIcons({ nodes: [btn] });
+        });
+
+        document.getElementById('btn-edit-market').addEventListener('click', () => {
+          openModal(`
+            <div class="p-6">
+              <h3 class="text-base font-bold text-espresso-950">Actualizar Bolsa NY y Dólar a mano (HU04)</h3>
+              <p class="text-xs text-stone-500 mt-1">Úsalo si no hay conexión. El sistema conservará el valor actual como valor anterior para mostrar la variación. La próxima consulta en línea reemplaza estos valores.</p>
+              <form id="form-manual-market" class="mt-4 space-y-3">
+                <div>
+                  <label class="block text-xs font-semibold text-espresso-900 mb-1">Bolsa de Nueva York (¢ USD/lb)</label>
+                  <input id="mm-bolsa" type="number" step="0.01" value="${state.mercado.bolsaNY}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums" required />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-espresso-900 mb-1">Dólar TRM (COP)</label>
+                  <input id="mm-dolar" type="number" step="0.01" value="${state.mercado.dolarTRM}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums" required />
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" id="mm-cancel" class="px-4 py-2 rounded-xl border border-parchment-300 text-xs font-semibold cursor-pointer">Cancelar</button>
+                  <button type="submit" class="px-4 py-2 rounded-xl bg-cafetal-600 text-white text-xs font-semibold cursor-pointer">Guardar valores</button>
+                </div>
+              </form>
+            </div>
+          `);
+          document.getElementById('mm-cancel').addEventListener('click', closeModal);
+          document.getElementById('form-manual-market').addEventListener('submit', (ev) => {
+            ev.preventDefault();
+            const nb = Number(document.getElementById('mm-bolsa').value);
+            const nd = Number(document.getElementById('mm-dolar').value);
+            if (nb > 0 && nd > 0) {
+              const ahora = `${getTodayISO()} ${getNowTime()}`;
+              const m = state.mercado;
+              m.bolsaNYAnterior = m.bolsaNY;
+              m.bolsaNY = nb;
+              m.bolsaEtiquetaAnterior = 'Anterior';
+              m.bolsaContrato = null;
+              m.bolsaHora = ahora;
+              m.bolsaFuente = 'Ingresado a mano';
+              m.dolarTRMAnterior = m.dolarTRM;
+              m.dolarTRM = nd;
+              m.dolarEtiquetaAnterior = 'Anterior';
+              m.dolarHora = ahora;
+              m.dolarFuente = 'Ingresado a mano';
+              saveState();
+              closeModal();
+              showToast('Valores de Bolsa NY y Dólar actualizados.', 'success');
+              renderShell();
+            }
+          });
+        });
+      }
+
+      // ==================== VIEW 2: TASACIÓN Y COTIZACIÓN (HU06 - HU18) ====================
+      function renderTasacionView(container) {
+        const user = getCurrentUser();
+        const cargasPendientes = state.cargas.filter(c => c.estado !== 'Comprada' && c.estado !== 'No aceptada');
+        let selectedCarga = state.cargas.find(c => c.id === state.selectedCargaId);
+        if (!selectedCarga && cargasPendientes.length > 0) {
+          selectedCarga = cargasPendientes[0];
+          state.selectedCargaId = selectedCarga.id;
+        }
+
+        const today = getTodayISO();
+
+        container.innerHTML = `
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <!-- Left Column: Step 1 (HU06 Register Load) + Pending Loads List -->
+            <div class="xl:col-span-5 space-y-6">
+              <section class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-3.5">
+                  <div>
+                    <h3 class="text-base font-bold text-espresso-950">Paso 1 · Registrar Carga (HU06)</h3>
+                    <p class="text-xs text-stone-500">Kilos pesados en báscula asociados al agricultor por cédula.</p>
+                  </div>
+                  <span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-parchment-100 text-espresso-800">RN008</span>
+                </div>
+
+                <form id="form-nueva-carga" class="space-y-3" novalidate>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label for="carga-fecha" class="block text-xs font-semibold text-espresso-900 mb-1">Fecha *</label>
+                      <input id="carga-fecha" type="date" value="${today}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    </div>
+                    <div>
+                      <label for="carga-sede" class="block text-xs font-semibold text-espresso-900 mb-1">Sede *</label>
+                      <select id="carga-sede" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cafetal-600">
+                        <option value="Abejorral" ${user.sede === 'Abejorral' ? 'selected' : ''}>Sede Abejorral</option>
+                        <option value="Pantanillo" ${user.sede === 'Pantanillo' ? 'selected' : ''}>Sede Pantanillo</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="carga-cedula" class="block text-xs font-semibold text-espresso-900 mb-1">Cédula del agricultor * (solo números, máx. 10 dígitos)</label>
+                    <input id="carga-cedula" type="text" inputmode="numeric" maxlength="12" placeholder="Ej. 70123456" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                    <div id="carga-agricultor-status" class="mt-1.5 text-xs"></div>
+                  </div>
+
+                  <div id="carga-nombre-wrapper" class="hidden">
+                    <label for="carga-nombre" class="block text-xs font-semibold text-espresso-900 mb-1">Nombre completo del agricultor nuevo *</label>
+                    <input id="carga-nombre" type="text" placeholder="Ej. Pedro Antonio López" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                  </div>
+
+                  <div>
+                    <label for="carga-kilos" class="block text-xs font-semibold text-espresso-900 mb-1">Kilos pesados en báscula *</label>
+                    <input id="carga-kilos" type="number" step="0.5" min="0.5" placeholder="Ej. 500" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                  </div>
+
+                  <div id="carga-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+                  <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-sm font-semibold cursor-pointer flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    Crear carga y continuar a muestra
+                  </button>
+                </form>
+              </section>
+
+              <!-- Active Loads Selector -->
+              <section class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="text-sm font-bold text-espresso-950">Cargas en proceso (${cargasPendientes.length})</h3>
+                  <span class="text-[11px] text-stone-500">Selecciona para tasar o cotizar</span>
+                </div>
+                ${cargasPendientes.length === 0 ? `
+                  <p class="text-xs text-stone-500 py-4 text-center bg-parchment-50 rounded-xl border border-dashed border-parchment-300">No hay cargas pendientes. Registra una nueva carga arriba.</p>
+                ` : `
+                  <div class="space-y-2 max-h-72 overflow-y-auto">
+                    ${cargasPendientes.slice().reverse().map(c => `
+                      <button type="button" data-select-carga="${c.id}" class="w-full text-left p-3 rounded-xl border transition cursor-pointer ${selectedCarga && selectedCarga.id === c.id ? 'border-cafetal-600 bg-cafetal-50/50 ring-1 ring-cafetal-600' : 'border-parchment-200 hover:bg-parchment-50'}">
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-xs font-bold text-espresso-950 truncate">${escapeHtml(c.nombreAgricultor)}</span>
+                          <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${c.estado === 'Cotizada' ? 'bg-cafetal-100 text-cafetal-800' : 'bg-cosecha-100 text-cosecha-600'}">${c.estado}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-stone-500 mt-1 tabular-nums">
+                          <span>CC ${c.cedula} · ${c.sede}</span>
+                          <span class="font-semibold text-espresso-800">${fmtNum(c.kilosBascula, 0)} kg ${c.muestra ? `· F ${fmtNum(c.muestra.factorExacto, 2)}` : '· Sin muestra'}</span>
+                        </div>
+                      </button>
+                    `).join('')}
+                  </div>
+                `}
+              </section>
+            </div>
+
+            <!-- Right Column: Step 2 (Muestra & Factor) + Step 3 (Cotización, Utilidad & Decisión) -->
+            <div class="xl:col-span-7 space-y-6">
+              ${selectedCarga ? renderCargaWorkspaceHTML(selectedCarga) : `
+                <div class="bg-white rounded-2xl border border-parchment-300 p-10 text-center">
+                  <i data-lucide="coffee" class="w-10 h-10 text-parchment-300 mx-auto mb-3"></i>
+                  <h3 class="text-base font-bold text-espresso-900">Selecciona o registra una carga</h3>
+                  <p class="text-xs text-stone-500 mt-1">Aquí podrás registrar la muestra física, calcular el factor de rendimiento y generar la cotización detallada.</p>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+
+        // Bind Cedula lookup (HU06 Esc. 1 & 2)
+        const cedInput = document.getElementById('carga-cedula');
+        const statusEl = document.getElementById('carga-agricultor-status');
+        const nombreWrap = document.getElementById('carga-nombre-wrapper');
+        const nombreInput = document.getElementById('carga-nombre');
+
+        function checkFarmerCedula() {
+          const val = cedInput.value.trim();
+          if (!val) {
+            statusEl.innerHTML = '';
+            nombreWrap.classList.add('hidden');
+            return;
+          }
+          if (!isValidCedula(val)) {
+            statusEl.innerHTML = `<span class="text-red-600 font-medium">Solo números y máximo 10 dígitos (sin puntos ni espacios).</span>`;
+            nombreWrap.classList.add('hidden');
+            return;
+          }
+          const found = state.agricultores.find(a => a.cedula === val);
+          if (found) {
+            statusEl.innerHTML = `
+              <div class="flex items-center justify-between bg-cafetal-50 border border-cafetal-100 rounded-lg px-2.5 py-1.5 text-cafetal-800">
+                <span><strong>Agricultor registrado:</strong> ${escapeHtml(found.nombre)}</span>
+                <button type="button" id="btn-ver-hist-rapido" class="underline font-semibold cursor-pointer">Ver historial</button>
+              </div>`;
+            nombreWrap.classList.add('hidden');
+            document.getElementById('btn-ver-hist-rapido').addEventListener('click', () => {
+              state.activeTab = 'agricultores';
+              state.searchFarmerCedula = found.cedula;
+              saveState();
+              renderShell();
+            });
+          } else {
+            statusEl.innerHTML = `<span class="text-cosecha-600 font-medium">Cédula nueva: ingresa el nombre del agricultor para registrarlo.</span>`;
+            nombreWrap.classList.remove('hidden');
+          }
+        }
+        cedInput.addEventListener('input', checkFarmerCedula);
+
+        // Bind HU06 submit
+        document.getElementById('form-nueva-carga').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fecha = document.getElementById('carga-fecha').value.trim();
+          const sede = document.getElementById('carga-sede').value;
+          const ced = cedInput.value.trim();
+          const kilosRaw = document.getElementById('carga-kilos').value.trim();
+          const errEl = document.getElementById('carga-error');
+          errEl.classList.add('hidden');
+
+          const errors = [];
+          if (!fecha) errors.push('Falta la fecha.');
+          if (!sede) errors.push('Falta la sede.');
+          if (!ced) errors.push('Falta la cédula del agricultor.');
+          else if (!isValidCedula(ced)) errors.push('La cédula se escribe solo con números y tiene máximo 10 dígitos.');
+          if (!kilosRaw || isNaN(Number(kilosRaw)) || Number(kilosRaw) <= 0) errors.push('Los kilos de báscula deben ser mayores que 0.');
+
+          let farmer = state.agricultores.find(a => a.cedula === ced);
+          if (isValidCedula(ced) && !farmer) {
+            nombreWrap.classList.remove('hidden');
+            const nombreVal = nombreInput.value.trim();
+            if (!nombreVal) {
+              errors.push('Cédula nueva: debes ingresar el nombre del agricultor antes de crear la carga.');
+            }
+          }
+
+          if (errors.length > 0) {
+            errEl.innerHTML = errors.map(x => `<p>• ${x}</p>`).join('');
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          if (!farmer) {
+            farmer = { cedula: ced, nombre: nombreInput.value.trim() };
+            state.agricultores.push(farmer);
+          }
+
+          const nuevaCarga = {
+            id: `CAR-${Date.now().toString().slice(-4)}`,
+            fecha,
+            sede,
+            cedula: farmer.cedula,
+            nombreAgricultor: farmer.nombre,
+            kilosBascula: Number(kilosRaw),
+            muestra: null,
+            descuentoHumedadKg: 0,
+            kilosPagar: Number(kilosRaw),
+            precioBaseCargaCongelado: null,
+            precioBaseKiloCongelado: null,
+            valorUnitarioCalculado: null,
+            valorUnitarioPagado: null,
+            pagoTotal: null,
+            kilosExcelso: null,
+            estado: 'Pendiente muestra',
+            ajusteJefa: null,
+            registradoPor: getCurrentUser().nombre,
+            horaRegistro: getNowTime()
+          };
+
+          state.cargas.push(nuevaCarga);
+          state.selectedCargaId = nuevaCarga.id;
+          saveState();
+          showToast(`Carga ${nuevaCarga.id} creada para ${farmer.nombre}. Lista para registrar la muestra.`, 'success');
+          renderShell();
+        });
+
+        // Bind selecting pending load
+        container.querySelectorAll('[data-select-carga]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.selectedCargaId = btn.dataset.selectCarga;
+            saveState();
+            renderShell();
+          });
+        });
+
+        if (selectedCarga) {
+          bindCargaWorkspaceEvents(selectedCarga);
+        }
+      }
+
+      function renderCargaWorkspaceHTML(carga) {
+        const isLocked = carga.estado === 'Comprada' || carga.estado === 'No aceptada';
+        const suggestedWeight = carga.muestra ? carga.muestra.pesoMuestra : sugerirPesoMuestra(carga.kilosBascula);
+        const utilidad = isJefa() && carga.muestra ? calcularUtilidadEsperada(carga, state.transporteConsultaCarga) : null;
+
+        return `
+          <!-- Selected Load Header + Kilos Correction (HU12 Esc. 2) -->
+          <section class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+            <div class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-parchment-200">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-espresso-900 text-white tabular-nums">${carga.id}</span>
+                  <span class="text-xs font-semibold px-2 py-0.5 rounded-full ${carga.estado === 'Comprada' ? 'bg-cafetal-100 text-cafetal-800' : (carga.estado === 'No aceptada' ? 'bg-stone-200 text-stone-700' : 'bg-cosecha-100 text-cosecha-600')}">${carga.estado}</span>
+                  <span class="text-xs text-stone-500">${carga.fecha} · Sede ${carga.sede}</span>
+                </div>
+                <h3 class="text-lg font-bold text-espresso-950 mt-1">${escapeHtml(carga.nombreAgricultor)} <span class="text-sm font-normal text-stone-500 tabular-nums">(CC ${carga.cedula})</span></h3>
+              </div>
+              <div class="flex items-center gap-2">
+                ${!isLocked ? `
+                  <button type="button" id="btn-corregir-kilos" class="px-3 py-1.5 rounded-xl border border-parchment-300 hover:bg-parchment-100 text-xs font-semibold text-espresso-900 cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Corregir kilos (${fmtNum(carga.kilosBascula, 0)} kg)
+                  </button>
+                ` : `
+                  <span class="inline-flex items-center gap-1 text-xs font-semibold text-stone-500 bg-parchment-100 px-2.5 py-1 rounded-lg">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Factor y kilos bloqueados
+                  </span>
+                `}
+              </div>
+            </div>
+
+            <!-- Step 2: Sample & Moisture Form (HU08, HU09, HU10) -->
+            <form id="form-muestra" class="mt-4 space-y-4" novalidate>
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-bold text-espresso-950">Paso 2 · Análisis de Muestra y Humedad (HU08–HU10)</h4>
+                <span class="text-[11px] text-stone-500">Sugerido por peso (${fmtNum(carga.kilosBascula, 0)} kg): <strong>${sugerirPesoMuestra(carga.kilosBascula)} g</strong></span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label for="muestra-peso" class="block text-xs font-semibold text-espresso-900 mb-1">Peso de la muestra *</label>
+                  <select id="muestra-peso" ${isLocked ? 'disabled' : ''} class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm bg-white disabled:bg-parchment-100 focus:outline-none focus:ring-2 focus:ring-cafetal-600">
+                    <option value="200" ${suggestedWeight === 200 ? 'selected' : ''}>200 g (< 500 kg)</option>
+                    <option value="250" ${suggestedWeight === 250 ? 'selected' : ''}>250 g (500 kg – 1 ton)</option>
+                    <option value="300" ${suggestedWeight === 300 ? 'selected' : ''}>300 g (Análisis a fondo)</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="muestra-almendra" class="block text-xs font-semibold text-espresso-900 mb-1">Gramos almendra limpia *</label>
+                  <input id="muestra-almendra" type="number" step="0.01" ${isLocked ? 'disabled' : ''} value="${carga.muestra ? carga.muestra.gramosAlmendraLimpia : ''}" placeholder="Ej. 148.94" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums disabled:bg-parchment-100 focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                </div>
+                <div>
+                  <label for="muestra-humedad" class="block text-xs font-semibold text-espresso-900 mb-1">Humedad (%) * <span class="font-normal text-stone-400">Normal ≤ 12%</span></label>
+                  <input id="muestra-humedad" type="number" step="0.1" ${isLocked ? 'disabled' : ''} value="${carga.muestra ? carga.muestra.humedad : '12'}" placeholder="12.0" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums disabled:bg-parchment-100 focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="muestra-pasilla" class="block text-xs font-semibold text-stone-600 mb-1">Gramos de pasilla (opcional)</label>
+                  <input id="muestra-pasilla" type="number" step="0.1" min="0" ${isLocked ? 'disabled' : ''} value="${carga.muestra && carga.muestra.gramosPasilla !== null ? carga.muestra.gramosPasilla : ''}" placeholder="Ej. 10" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums disabled:bg-parchment-100" />
+                </div>
+                <div>
+                  <label for="muestra-broca" class="block text-xs font-semibold text-stone-600 mb-1">Gramos con broca / defectos (opcional)</label>
+                  <input id="muestra-broca" type="number" step="0.1" min="0" ${isLocked ? 'disabled' : ''} value="${carga.muestra && carga.muestra.gramosBroca !== null ? carga.muestra.gramosBroca : ''}" placeholder="Ej. 4" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums disabled:bg-parchment-100" />
+                </div>
+              </div>
+
+              <div id="muestra-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+              ${!isLocked ? `
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-sm font-semibold cursor-pointer inline-flex items-center gap-2">
+                  <i data-lucide="calculator" class="w-4 h-4"></i>
+                  ${carga.muestra ? 'Recalcular muestra y cotización' : 'Calcular factor y generar cotización'}
+                </button>
+              ` : ''}
+            </form>
+          </section>
+
+          <!-- Step 3: Detailed Quote (HU11, HU12, HU13, HU15, HU16) -->
+          <section class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div>
+                <h4 class="text-sm font-bold text-espresso-950">Paso 3 · Cotización Detallada al Agricultor (HU11–HU16)</h4>
+                <p class="text-xs text-stone-500">El valor unitario se calcula automáticamente y no se digita a mano (RN007).</p>
+              </div>
+              ${carga.muestra ? `
+                <button type="button" id="btn-mostrar-agricultor" class="px-3.5 py-1.5 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i> Mostrar / Imprimir comprobante
+                </button>
+              ` : ''}
+            </div>
+
+            ${!carga.muestra ? `
+              <!-- HU12 Esc. 3 & HU13 Esc. 3 -->
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 flex items-start gap-2.5">
+                <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+                <div>
+                  <p class="font-bold">Falta completar el análisis de la muestra</p>
+                  <p class="mt-0.5">El pago total, el valor unitario y los kilos de excelso no se muestran todavía porque falta el factor de rendimiento de la muestra.</p>
+                </div>
+              </div>
+            ` : `
+              <!-- Quote Metrics Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-[11px] text-stone-500 font-medium">Factor muestra (exacto)</p>
+                  <p class="text-lg font-extrabold text-espresso-950 tabular-nums mt-0.5">${fmtNum(carga.muestra.factorExacto, 2)}</p>
+                  <p class="text-[11px] text-stone-500">Se paga como <strong class="text-espresso-900">${carga.muestra.factorAproximado}</strong></p>
+                </div>
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-[11px] text-stone-500 font-medium">Puntos vs. Estándar 94</p>
+                  <p class="text-lg font-extrabold tabular-nums mt-0.5 ${carga.muestra.puntos > 0 ? 'text-cafetal-700' : (carga.muestra.puntos < 0 ? 'text-red-700' : 'text-espresso-900')}">
+                    ${carga.muestra.puntos > 0 ? `+${carga.muestra.puntos} (+${carga.muestra.puntos}%)` : (carga.muestra.puntos < 0 ? `${carga.muestra.puntos} (${carga.muestra.puntos}%)` : '0 (0%)')}
+                  </p>
+                  <p class="text-[11px] text-stone-500">${carga.muestra.puntos > 0 ? 'Suma al precio base' : (carga.muestra.puntos < 0 ? 'Resta al precio base' : 'Precio base exacto')}</p>
+                </div>
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-[11px] text-stone-500 font-medium">Kilos a pagar</p>
+                  <p class="text-lg font-extrabold text-espresso-950 tabular-nums mt-0.5">${fmtNum(carga.kilosPagar, carga.descuentoHumedadKg > 0 ? 2 : 0)} kg</p>
+                  <p class="text-[11px] ${carga.descuentoHumedadKg > 0 ? 'text-cosecha-600 font-semibold' : 'text-stone-500'}">
+                    ${carga.descuentoHumedadKg > 0 ? `Desc. humedad: −${fmtNum(carga.descuentoHumedadKg, 2)} kg` : `Humedad ${fmtNum(carga.muestra.humedad, 1)}% (sin desc.)`}
+                  </p>
+                </div>
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-[11px] text-stone-500 font-medium">Kilos de Excelso</p>
+                  <p class="text-lg font-extrabold text-espresso-950 tabular-nums mt-0.5">${fmtNum(carga.kilosExcelso, 2)} kg</p>
+                  <p class="text-[11px] text-stone-500">(Kilos ÷ Factor) × 70</p>
+                </div>
+              </div>
+
+              <!-- Locked Unit Price & Total Payment (HU11 & HU12) -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-espresso-900 text-white">
+                <div>
+                  <div class="flex items-center gap-1.5 text-xs text-parchment-300">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                    <span>Valor Unitario por Kilo (no editable)</span>
+                  </div>
+                  <p class="text-2xl font-extrabold tabular-nums mt-1">${fmtCOP(carga.valorUnitarioCalculado)}</p>
+                  <p class="text-[11px] text-parchment-300/80 mt-0.5">Calculado con Precio Base ${fmtCOP(carga.precioBaseCargaCongelado)} (${fmtCOP(carga.precioBaseKiloCongelado)}/kg)</p>
+                </div>
+                <div class="sm:text-right border-t sm:border-t-0 sm:border-l border-white/15 pt-3 sm:pt-0 sm:pl-4">
+                  <p class="text-xs text-parchment-300">Pago Total al Agricultor</p>
+                  <p class="text-2xl sm:text-3xl font-extrabold text-cafetal-100 tabular-nums mt-1">${fmtCOP(carga.pagoTotal)}</p>
+                  <p class="text-[11px] text-parchment-300/80 mt-0.5">${fmtCOP(carga.valorUnitarioPagado)} × ${fmtNum(carga.kilosPagar, carga.descuentoHumedadKg > 0 ? 2 : 0)} kg</p>
+                </div>
+              </div>
+
+              <!-- HU14: Expected Profit Panel (JEFA ONLY) -->
+              ${isJefa() && utilidad ? `
+                <div class="mt-4 rounded-2xl border-2 ${utilidad.esPerdida ? 'border-red-300 bg-red-50/70' : 'border-cafetal-200 bg-cafetal-50/50'} p-4">
+                  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-bold uppercase tracking-wide ${utilidad.esPerdida ? 'text-red-800' : 'text-cafetal-800'}">Utilidad Esperada de la Carga (Solo Jefa · HU14)</span>
+                      ${utilidad.esPerdida ? '<span class="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold">PÉRDIDA</span>' : '<span class="px-2 py-0.5 rounded-full bg-cafetal-600 text-white text-[10px] font-bold">RENTABLE</span>'}
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <label for="input-transporte-carga" class="text-[11px] font-semibold text-stone-700">Transporte / carga:</label>
+                      <input id="input-transporte-carga" type="number" min="0" step="1000" value="${state.transporteConsultaCarga}" class="w-28 px-2.5 py-1 rounded-lg border border-parchment-300 bg-white text-xs font-semibold tabular-nums" />
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div class="bg-white/80 rounded-xl p-2.5 border border-black/5">
+                      <p class="text-stone-500">Valor venta estimado</p>
+                      <p class="text-sm font-bold text-espresso-950 tabular-nums mt-0.5">${fmtCOP(utilidad.valorVentaEstimado)}</p>
+                      <p class="text-[10px] text-stone-500">${fmtCOP(utilidad.precioVentaKilo)}/kg · ${escapeHtml(utilidad.fuenteRef)}</p>
+                    </div>
+                    <div class="bg-white/80 rounded-xl p-2.5 border border-black/5">
+                      <p class="text-stone-500">Costo transporte (${fmtNum(utilidad.numCargas, 2)} cargas)</p>
+                      <p class="text-sm font-bold text-espresso-950 tabular-nums mt-0.5">${fmtCOP(utilidad.costoTransporte)}</p>
+                      <p class="text-[10px] text-stone-500">${fmtCOP(state.transporteConsultaCarga)} por carga de 125 kg</p>
+                    </div>
+                    <div class="bg-white rounded-xl p-2.5 border ${utilidad.esPerdida ? 'border-red-300' : 'border-cafetal-200'}">
+                      <p class="text-stone-500">Utilidad esperada neta</p>
+                      <p class="text-base font-extrabold tabular-nums mt-0.5 ${utilidad.esPerdida ? 'text-red-700' : 'text-cafetal-700'}">${fmtCOP(utilidad.utilidadTotal)}</p>
+                      <p class="text-[10px] font-semibold ${utilidad.esPerdida ? 'text-red-600' : 'text-cafetal-700'} tabular-nums">${fmtCOP(utilidad.utilidadPorCarga)} por carga</p>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Decision Buttons (HU17 & HU18) -->
+              ${!isLocked ? `
+                <div class="mt-5 pt-4 border-t border-parchment-200 space-y-3">
+                  ${isJefa() ? `
+                    <details class="bg-parchment-50 border border-parchment-200 rounded-xl p-3">
+                      <summary class="text-xs font-semibold text-espresso-900 cursor-pointer select-none">
+                        Opción exclusiva Jefa: Subir valor unitario al agricultor para colaborarle (sin cambiar factor)
+                      </summary>
+                      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label for="jefa-colab-valor" class="block text-[11px] font-semibold text-espresso-900 mb-1">Valor unitario pagado (COP/kg)</label>
+                          <input id="jefa-colab-valor" type="number" min="${carga.valorUnitarioCalculado}" placeholder="Mayor a ${carga.valorUnitarioCalculado}" class="w-full px-3 py-1.5 rounded-lg border border-parchment-300 bg-white text-xs tabular-nums" />
+                        </div>
+                        <div>
+                          <label for="jefa-colab-motivo" class="block text-[11px] font-semibold text-espresso-900 mb-1">Motivo de la colaboración *</label>
+                          <input id="jefa-colab-motivo" type="text" placeholder="Ej. Cliente frecuente / ayuda transporte" class="w-full px-3 py-1.5 rounded-lg border border-parchment-300 bg-white text-xs" />
+                        </div>
+                      </div>
+                    </details>
+                  ` : ''}
+
+                  <div class="flex flex-wrap items-center justify-end gap-2.5">
+                    <button type="button" id="btn-rechazar-cotizacion" class="px-4 py-2.5 rounded-xl border border-red-300 text-red-700 hover:bg-red-50 text-xs sm:text-sm font-semibold cursor-pointer">
+                      Agricultor no acepta (HU17)
+                    </button>
+                    <button type="button" id="btn-confirmar-compra" class="px-5 py-2.5 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-xs sm:text-sm font-semibold cursor-pointer inline-flex items-center gap-2 shadow-sm">
+                      <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                      Agricultor acepta · Registrar Compra (HU18)
+                    </button>
+                  </div>
+                </div>
+              ` : ''}
+            `}
+          </section>
+        `;
+      }
+
+      function bindCargaWorkspaceEvents(carga) {
+        // Kilos correction (HU12 Esc. 2)
+        const btnKilos = document.getElementById('btn-corregir-kilos');
+        if (btnKilos) {
+          btnKilos.addEventListener('click', () => {
+            openModal(`
+              <div class="p-6">
+                <h3 class="text-base font-bold text-espresso-950">Corregir Kilos de Báscula (HU12)</h3>
+                <p class="text-xs text-stone-500 mt-1">Disponible mientras la compra no se haya registrado. Recalculará kilos a pagar, pago total y kilos de excelso.</p>
+                <form id="form-fix-kilos" class="mt-4 space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-espresso-900 mb-1">Nuevos kilos de báscula *</label>
+                    <input id="fix-kilos-val" type="number" step="0.5" min="0.5" value="${carga.kilosBascula}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums" required />
+                  </div>
+                  <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="fix-kilos-cancel" class="px-4 py-2 rounded-xl border border-parchment-300 text-xs font-semibold cursor-pointer">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl bg-cafetal-600 text-white text-xs font-semibold cursor-pointer">Guardar corrección</button>
+                  </div>
+                </form>
+              </div>
+            `);
+            document.getElementById('fix-kilos-cancel').addEventListener('click', closeModal);
+            document.getElementById('form-fix-kilos').addEventListener('submit', (ev) => {
+              ev.preventDefault();
+              const nk = Number(document.getElementById('fix-kilos-val').value);
+              if (!nk || nk <= 0) return;
+              carga.kilosBascula = nk;
+              if (carga.muestra) {
+                const hum = calcularDescuentoHumedad(nk, carga.muestra.humedad);
+                carga.descuentoHumedadKg = hum.descuentoKg;
+                carga.kilosPagar = hum.kilosPagar;
+                carga.pagoTotal = Math.round(carga.valorUnitarioCalculado * carga.kilosPagar);
+                carga.kilosExcelso = calcularKilosExcelso(carga.kilosPagar, carga.muestra.factorExacto);
+              } else {
+                carga.kilosPagar = nk;
+              }
+              saveState();
+              closeModal();
+              showToast(`Kilos actualizados a ${nk} kg. Cálculos recalculados.`, 'success');
+              renderShell();
+            });
+          });
+        }
+
+        // Sample submission (HU08, HU09, HU10, HU11, HU12, HU13)
+        const formMuestra = document.getElementById('form-muestra');
+        if (formMuestra) {
+          formMuestra.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pesoMuestra = Number(document.getElementById('muestra-peso').value);
+            const almendraRaw = document.getElementById('muestra-almendra').value.trim();
+            const humRaw = document.getElementById('muestra-humedad').value.trim();
+            const pasillaRaw = document.getElementById('muestra-pasilla').value.trim();
+            const brocaRaw = document.getElementById('muestra-broca').value.trim();
+            const errEl = document.getElementById('muestra-error');
+            errEl.classList.add('hidden');
+
+            const almendra = Number(almendraRaw);
+            const humedad = Number(humRaw);
+
+            if (!almendraRaw || isNaN(almendra) || almendra <= 0 || almendra > pesoMuestra) {
+              errEl.textContent = `Los gramos de almendra limpia son obligatorios, deben ser mayores que 0 y no mayores que el peso de la muestra (${pesoMuestra} g).`;
+              errEl.classList.remove('hidden');
+              return;
+            }
+            if (!humRaw || isNaN(humedad) || humedad < 0 || humedad > 100) {
+              errEl.textContent = 'Ingresa un porcentaje de humedad válido (entre 0 y 100%).';
+              errEl.classList.remove('hidden');
+              return;
+            }
+
+            const factorExacto = calcularFactorExacto(pesoMuestra, almendra);
+            const factorAproximado = aproximarFactor(factorExacto);
+            const puntos = 94 - factorAproximado;
+            const humCalc = calcularDescuentoHumedad(carga.kilosBascula, humedad);
+
+            // Freeze current base price on first calculation, or keep frozen if already quoted (HU11 Esc. 2)
+            const pbCarga = carga.precioBaseCargaCongelado || state.precioBaseVigente.valorCarga;
+            const pbKilo = Math.round(pbCarga / 125);
+            const valUnit = calcularValorUnitario(pbCarga, factorAproximado);
+            const pagoTotal = Math.round(valUnit * humCalc.kilosPagar);
+            const excelso = calcularKilosExcelso(humCalc.kilosPagar, factorExacto);
+
+            carga.muestra = {
+              pesoMuestra,
+              gramosAlmendraLimpia: almendra,
+              humedad,
+              gramosPasilla: pasillaRaw !== '' ? Number(pasillaRaw) : null,
+              gramosBroca: brocaRaw !== '' ? Number(brocaRaw) : null,
+              factorExacto,
+              factorAproximado,
+              puntos
+            };
+            carga.descuentoHumedadKg = humCalc.descuentoKg;
+            carga.kilosPagar = humCalc.kilosPagar;
+            carga.precioBaseCargaCongelado = pbCarga;
+            carga.precioBaseKiloCongelado = pbKilo;
+            carga.valorUnitarioCalculado = valUnit;
+            carga.valorUnitarioPagado = valUnit;
+            carga.pagoTotal = pagoTotal;
+            carga.kilosExcelso = excelso;
+            carga.estado = 'Cotizada';
+
+            saveState();
+            showToast(`Factor ${fmtNum(factorExacto, 2)} (paga como ${factorAproximado}). Cotización lista: ${fmtCOP(pagoTotal)}.`, 'success');
+            renderShell();
+          });
+        }
+
+        // Transport input for HU14
+        const transpInput = document.getElementById('input-transporte-carga');
+        if (transpInput) {
+          transpInput.addEventListener('change', () => {
+            state.transporteConsultaCarga = Math.max(0, Number(transpInput.value) || 0);
+            saveState();
+            renderShell();
+          });
+        }
+
+        // Show/Print Farmer Receipt (HU16)
+        const btnMostrar = document.getElementById('btn-mostrar-agricultor');
+        if (btnMostrar) {
+          btnMostrar.addEventListener('click', () => openReceiptModal(carga));
+        }
+
+        // Reject Quote (HU17)
+        const btnRechazar = document.getElementById('btn-rechazar-cotizacion');
+        if (btnRechazar) {
+          btnRechazar.addEventListener('click', () => {
+            carga.estado = 'No aceptada';
+            state.selectedCargaId = null;
+            saveState();
+            showToast(`Cotización ${carga.id} registrada como No aceptada (sin generar compra).`, 'info');
+            renderShell();
+          });
+        }
+
+        // Confirm Purchase (HU18)
+        const btnConfirmar = document.getElementById('btn-confirmar-compra');
+        if (btnConfirmar) {
+          btnConfirmar.addEventListener('click', () => {
+            if (isJefa()) {
+              const colabValEl = document.getElementById('jefa-colab-valor');
+              const colabMotEl = document.getElementById('jefa-colab-motivo');
+              const colabValRaw = colabValEl ? colabValEl.value.trim() : '';
+              if (colabValRaw !== '') {
+                const colabVal = Number(colabValRaw);
+                const motivo = colabMotEl ? colabMotEl.value.trim() : '';
+                if (isNaN(colabVal) || colabVal <= carga.valorUnitarioCalculado) {
+                  showToast(`El valor de colaboración debe ser mayor al valor calculado (${fmtCOP(carga.valorUnitarioCalculado)}).`, 'error');
+                  return;
+                }
+                if (!motivo) {
+                  showToast('Debes ingresar el motivo para subir el valor unitario al agricultor.', 'error');
+                  return;
+                }
+                carga.valorUnitarioPagado = Math.round(colabVal);
+                carga.pagoTotal = Math.round(carga.valorUnitarioPagado * carga.kilosPagar);
+                carga.ajusteJefa = {
+                  valorCalculado: carga.valorUnitarioCalculado,
+                  valorPagado: carga.valorUnitarioPagado,
+                  motivo,
+                  usuario: getCurrentUser().nombre
+                };
+              }
+            }
+
+            carga.estado = 'Comprada';
+            carga.horaCompra = getNowTime();
+            state.selectedCargaId = null;
+            saveState();
+            showToast(`Compra ${carga.id} registrada. Factor (${fmtNum(carga.muestra.factorExacto, 2)}) y kilos quedan bloqueados.`, 'success');
+            renderShell();
+          });
+        }
+      }
+
+      function openReceiptModal(carga) {
+        const htmlContent = `
+          <div class="p-6 space-y-4">
+            <div class="flex items-start justify-between border-b border-parchment-200 pb-4">
+              <div>
+                <p class="text-[11px] uppercase tracking-widest text-cafetal-700 font-bold">Compras de Café «Mi Origen»</p>
+                <h3 class="text-lg font-extrabold text-espresso-950">Comprobante de Cotización Detallada</h3>
+                <p class="text-xs text-stone-500">Sede ${carga.sede} · ${carga.fecha} · Ref: ${carga.id}</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${carga.estado === 'Comprada' ? 'bg-cafetal-100 text-cafetal-800' : 'bg-parchment-100 text-espresso-900'}">${carga.estado}</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-xs bg-parchment-50 p-3.5 rounded-xl border border-parchment-200">
+              <div><span class="text-stone-500">Agricultor:</span><p class="font-bold text-espresso-950">${escapeHtml(carga.nombreAgricultor)}</p></div>
+              <div><span class="text-stone-500">Cédula:</span><p class="font-bold text-espresso-950 tabular-nums">${carga.cedula}</p></div>
+              <div><span class="text-stone-500">Precio base aplicado:</span><p class="font-semibold tabular-nums">${fmtCOP(carga.precioBaseCargaCongelado)} / carga (${fmtCOP(carga.precioBaseKiloCongelado)}/kg)</p></div>
+              <div><span class="text-stone-500">Muestra analizada:</span><p class="font-semibold tabular-nums">${carga.muestra.pesoMuestra} g · Almendra limpia: ${carga.muestra.gramosAlmendraLimpia} g</p></div>
+            </div>
+
+            <table class="w-full text-xs">
+              <tbody class="divide-y divide-parchment-200">
+                <tr><td class="py-2 text-stone-600">Kilos pesados en báscula</td><td class="py-2 text-right font-semibold tabular-nums">${fmtNum(carga.kilosBascula, 2)} kg</td></tr>
+                <tr><td class="py-2 text-stone-600">Humedad medida (normal ≤ 12%)</td><td class="py-2 text-right font-semibold tabular-nums">${fmtNum(carga.muestra.humedad, 1)} %</td></tr>
+                <tr><td class="py-2 text-stone-600">Descuento por humedad</td><td class="py-2 text-right font-semibold tabular-nums">${carga.descuentoHumedadKg > 0 ? `−${fmtNum(carga.descuentoHumedadKg, 2)} kg` : '0 kg'}</td></tr>
+                <tr><td class="py-2 text-stone-600 font-semibold">Kilos netos a pagar</td><td class="py-2 text-right font-bold tabular-nums">${fmtNum(carga.kilosPagar, 2)} kg</td></tr>
+                <tr><td class="py-2 text-stone-600">Factor de rendimiento de la muestra</td><td class="py-2 text-right font-semibold tabular-nums">${fmtNum(carga.muestra.factorExacto, 2)} (se paga como <strong>${carga.muestra.factorAproximado}</strong>)</td></tr>
+                <tr><td class="py-2 text-stone-600">Puntos frente al estándar 94</td><td class="py-2 text-right font-bold tabular-nums">${carga.muestra.puntos > 0 ? `+${carga.muestra.puntos} (+${carga.muestra.puntos}%)` : `${carga.muestra.puntos} (${carga.muestra.puntos}%)`}</td></tr>
+                <tr><td class="py-2 text-stone-600">Kilos de café excelso estimados</td><td class="py-2 text-right font-semibold tabular-nums">${fmtNum(carga.kilosExcelso, 2)} kg</td></tr>
+                <tr><td class="py-2 text-stone-600">Valor unitario por kilo</td><td class="py-2 text-right font-bold text-espresso-950 tabular-nums">${fmtCOP(carga.valorUnitarioPagado)} / kg</td></tr>
+                ${carga.ajusteJefa ? `<tr><td class="py-2 text-cafetal-700">Colaboración Jefa (${escapeHtml(carga.ajusteJefa.motivo)})</td><td class="py-2 text-right font-semibold text-cafetal-700 tabular-nums">Calculado: ${fmtCOP(carga.ajusteJefa.valorCalculado)} → Pagado: ${fmtCOP(carga.ajusteJefa.valorPagado)}</td></tr>` : ''}
+              </tbody>
+            </table>
+
+            <div class="bg-espresso-900 text-white rounded-xl p-4 flex items-center justify-between">
+              <span class="text-xs uppercase tracking-wider text-parchment-300 font-semibold">Total a Pagar</span>
+              <span class="text-2xl font-extrabold tabular-nums">${fmtCOP(carga.pagoTotal)}</span>
+            </div>
+
+            ${(carga.muestra.gramosPasilla || carga.muestra.gramosBroca) ? `
+              <p class="text-[11px] text-stone-500">Defectos observados en muestra: Pasilla ${carga.muestra.gramosPasilla ?? 0} g · Broca/defectos ${carga.muestra.gramosBroca ?? 0} g.</p>
+            ` : ''}
+
+            <div class="flex justify-end gap-2 pt-2 print:hidden">
+              <button type="button" id="receipt-close" class="px-4 py-2 rounded-xl border border-parchment-300 text-xs font-semibold cursor-pointer">Cerrar</button>
+              <button type="button" id="receipt-print" class="px-4 py-2 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir comprobante
+              </button>
+            </div>
+          </div>
+        `;
+        openModal(htmlContent);
+        document.getElementById('receipt-close').addEventListener('click', closeModal);
+        document.getElementById('receipt-print').addEventListener('click', () => {
+          document.getElementById('print-area').innerHTML = htmlContent;
+          window.print();
+        });
+      }
+
+      // ==================== VIEW 3: TABLA DE PRECIOS POR FACTOR (HU03) ====================
+      function renderTablaPreciosView(container) {
+        const pv = state.precioBaseVigente;
+        const factors = [];
+        for (let f = 89; f <= 100; f++) {
+          const pts = 94 - f;
+          const valKilo = calcularValorUnitario(pv.valorCarga, f);
+          const valCarga = valKilo * 125;
+          factors.push({ f, pts, valKilo, valCarga });
+        }
+
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-base font-bold text-espresso-950">Tabla Oficial de Precios del Día (Factores 89 al 100)</h3>
+                <p class="text-xs text-stone-500">Precio base vigente en Abejorral y Pantanillo: <strong>${fmtCOP(pv.valorCarga)}</strong> por carga (${fmtCOP(pv.valorKilo)}/kg) · Actualizado ${pv.fecha} ${pv.hora}.</p>
+              </div>
+              <button type="button" id="btn-print-tabla" class="px-4 py-2 rounded-xl bg-espresso-900 hover:bg-espresso-800 text-white text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Imprimir para cartelera
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b-2 border-parchment-300 text-xs uppercase text-stone-500">
+                    <th class="py-2.5 px-3">Factor</th>
+                    <th class="py-2.5 px-3">Ajuste vs. Estándar 94</th>
+                    <th class="py-2.5 px-3 text-right">Valor por Kilo (COP)</th>
+                    <th class="py-2.5 px-3 text-right">Valor por Carga 125 kg (COP)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-parchment-200 tabular-nums">
+                  ${factors.map(row => `
+                    <tr class="${row.f === 94 ? 'bg-cafetal-50 font-bold' : 'hover:bg-parchment-50'}">
+                      <td class="py-2.5 px-3 font-bold text-espresso-950">Factor ${row.f} ${row.f === 94 ? '<span class="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-cafetal-600 text-white">ESTÁNDAR</span>' : ''}</td>
+                      <td class="py-2.5 px-3 font-semibold ${row.pts > 0 ? 'text-cafetal-700' : (row.pts < 0 ? 'text-red-700' : 'text-stone-600')}">
+                        ${row.pts > 0 ? `+${row.pts}% (+${row.pts} pts)` : (row.pts < 0 ? `${row.pts}% (${row.pts} pts)` : '0% (Base)')}
+                      </td>
+                      <td class="py-2.5 px-3 text-right font-bold text-espresso-950">${fmtCOP(row.valKilo)}</td>
+                      <td class="py-2.5 px-3 text-right text-stone-700">${fmtCOP(row.valCarga)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Out-of-table factor calculator (HU10 Esc. 3) -->
+            <div class="bg-parchment-100 rounded-2xl p-4 border border-parchment-300 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-bold text-espresso-950">Consultar factor fuera de la tabla (ej. factor 110)</p>
+                <p class="text-[11px] text-stone-600">La regla del 1% por punto frente a 94 también aplica por fuera del rango 89–100 (RN007).</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input id="custom-factor-input" type="number" min="70" max="150" value="110" class="w-24 px-3 py-1.5 rounded-xl border border-parchment-300 bg-white text-sm font-bold tabular-nums" />
+                <div id="custom-factor-result" class="text-xs font-bold text-espresso-950 bg-white px-3 py-2 rounded-xl border border-parchment-200 tabular-nums"></div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        function updateCustomFactor() {
+          const f = Math.round(Number(document.getElementById('custom-factor-input').value) || 94);
+          const pts = 94 - f;
+          const vk = calcularValorUnitario(pv.valorCarga, f);
+          document.getElementById('custom-factor-result').textContent =
+            `${pts >= 0 ? '+' : ''}${pts}% → ${fmtCOP(vk)}/kg (${fmtCOP(vk * 125)}/carga)`;
+        }
+        document.getElementById('custom-factor-input').addEventListener('input', updateCustomFactor);
+        updateCustomFactor();
+
+        document.getElementById('btn-print-tabla').addEventListener('click', () => {
+          document.getElementById('print-area').innerHTML = container.innerHTML;
+          window.print();
+        });
+      }
+
+      // ==================== VIEW 4: COMPRAS Y COTIZACIONES (HU17, HU18) ====================
+      function renderComprasView(container) {
+        const filterEstado = state.comprasFilterEstado || 'Todas';
+        const filterSede = state.comprasFilterSede || 'Todas';
+
+        const list = state.cargas.filter(c => {
+          if (filterEstado !== 'Todas' && c.estado !== filterEstado) return false;
+          if (filterSede !== 'Todas' && c.sede !== filterSede) return false;
+          return true;
+        }).slice().reverse();
+
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <select id="filter-compras-estado" class="px-3 py-2 rounded-xl border border-parchment-300 text-xs font-semibold bg-white">
+                  <option value="Todas" ${filterEstado === 'Todas' ? 'selected' : ''}>Todos los estados</option>
+                  <option value="Comprada" ${filterEstado === 'Comprada' ? 'selected' : ''}>Compradas</option>
+                  <option value="Cotizada" ${filterEstado === 'Cotizada' ? 'selected' : ''}>Cotizadas (pendientes)</option>
+                  <option value="No aceptada" ${filterEstado === 'No aceptada' ? 'selected' : ''}>No aceptadas</option>
+                </select>
+                <select id="filter-compras-sede" class="px-3 py-2 rounded-xl border border-parchment-300 text-xs font-semibold bg-white">
+                  <option value="Todas" ${filterSede === 'Todas' ? 'selected' : ''}>Ambas sedes</option>
+                  <option value="Abejorral" ${filterSede === 'Abejorral' ? 'selected' : ''}>Sede Abejorral</option>
+                  <option value="Pantanillo" ${filterSede === 'Pantanillo' ? 'selected' : ''}>Sede Pantanillo</option>
+                </select>
+              </div>
+              <button type="button" id="btn-export-pergamino-csv" class="px-3.5 py-2 rounded-xl border border-parchment-300 hover:bg-parchment-100 text-xs font-semibold text-espresso-900 cursor-pointer inline-flex items-center gap-1.5">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar Planilla Café Pergamino (CSV)
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-parchment-300 text-stone-500 uppercase">
+                    <th class="py-2.5 pr-3">Fecha / Sede</th>
+                    <th class="py-2.5 pr-3">Agricultor</th>
+                    <th class="py-2.5 pr-3 text-right">Kilos a pagar</th>
+                    <th class="py-2.5 pr-3 text-right">Factor</th>
+                    <th class="py-2.5 pr-3 text-right">Valor Unit.</th>
+                    <th class="py-2.5 pr-3 text-right">Pago Total</th>
+                    <th class="py-2.5 pr-3 text-right">Excelso (kg)</th>
+                    <th class="py-2.5 pr-3">Estado</th>
+                    <th class="py-2.5 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-parchment-100 tabular-nums">
+                  ${list.length === 0 ? `<tr><td colspan="9" class="py-8 text-center text-stone-500">No hay registros con los filtros seleccionados.</td></tr>` : list.map(c => `
+                    <tr class="hover:bg-parchment-50">
+                      <td class="py-3 pr-3 whitespace-nowrap">
+                        <p class="font-semibold text-espresso-950">${c.fecha}</p>
+                        <p class="text-[11px] text-stone-500">${c.sede}</p>
+                      </td>
+                      <td class="py-3 pr-3">
+                        <p class="font-semibold text-espresso-950">${escapeHtml(c.nombreAgricultor)}</p>
+                        <p class="text-[11px] text-stone-500">CC ${c.cedula}</p>
+                      </td>
+                      <td class="py-3 pr-3 text-right font-semibold">${fmtNum(c.kilosPagar, c.descuentoHumedadKg > 0 ? 2 : 0)} kg</td>
+                      <td class="py-3 pr-3 text-right">
+                        ${c.muestra ? `<span class="font-bold text-espresso-950">${fmtNum(c.muestra.factorExacto, 2)}</span> <span class="text-[10px] text-stone-400">(${c.muestra.factorAproximado})</span>` : '—'}
+                      </td>
+                      <td class="py-3 pr-3 text-right">
+                        ${c.valorUnitarioPagado ? fmtCOP(c.valorUnitarioPagado) : '—'}
+                        ${c.ajusteJefa ? `<p class="text-[10px] text-cafetal-700 font-semibold" title="${escapeHtml(c.ajusteJefa.motivo)}">+Colab. Jefa</p>` : ''}
+                      </td>
+                      <td class="py-3 pr-3 text-right font-bold text-espresso-950">${c.pagoTotal ? fmtCOP(c.pagoTotal) : '—'}</td>
+                      <td class="py-3 pr-3 text-right">${c.kilosExcelso ? fmtNum(c.kilosExcelso, 2) : '—'}</td>
+                      <td class="py-3 pr-3">
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${c.estado === 'Comprada' ? 'bg-cafetal-100 text-cafetal-800' : (c.estado === 'No aceptada' ? 'bg-stone-200 text-stone-700' : 'bg-cosecha-100 text-cosecha-600')}">
+                          ${c.estado === 'Comprada' ? '<i data-lucide="lock" class="w-3 h-3"></i>' : ''} ${c.estado}
+                        </span>
+                      </td>
+                      <td class="py-3 text-right">
+                        ${c.muestra ? `<button type="button" data-open-receipt="${c.id}" class="text-cafetal-700 hover:underline font-semibold cursor-pointer">Comprobante</button>` : `<button type="button" data-goto-tasar="${c.id}" class="text-cosecha-600 hover:underline font-semibold cursor-pointer">Tasar</button>`}
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('filter-compras-estado').addEventListener('change', (e) => {
+          state.comprasFilterEstado = e.target.value; renderActiveView(); refreshIcons();
+        });
+        document.getElementById('filter-compras-sede').addEventListener('change', (e) => {
+          state.comprasFilterSede = e.target.value; renderActiveView(); refreshIcons();
+        });
+        container.querySelectorAll('[data-open-receipt]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const c = state.cargas.find(x => x.id === btn.dataset.openReceipt);
+            if (c) openReceiptModal(c);
+          });
+        });
+        container.querySelectorAll('[data-goto-tasar]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.selectedCargaId = btn.dataset.gotoTasar;
+            state.activeTab = 'tasacion';
+            saveState();
+            renderShell();
+          });
+        });
+        document.getElementById('btn-export-pergamino-csv').addEventListener('click', () => {
+          const compras = state.cargas.filter(c => c.estado === 'Comprada');
+          const rows = [['FECHA', 'SEDE', 'CEDULA', 'NOMBRE', 'KILOS_A_PAGAR', 'PRECIO_BASE', 'VALOR_UNITARIO', 'PAGO_TOTAL', 'FACTOR', 'EXCELSO']];
+          compras.forEach(c => rows.push([c.fecha, c.sede, c.cedula, c.nombreAgricultor, c.kilosPagar, c.precioBaseCargaCongelado, c.valorUnitarioPagado, c.pagoTotal, c.muestra.factorExacto, c.kilosExcelso]));
+          downloadCSV('MiOrigen_Cafe_Pergamino.csv', rows);
+        });
+      }
+
+      // ==================== VIEW 5: PLANILLA DE PASILLA (HU19) ====================
+      function renderPasillaView(container) {
+        const user = getCurrentUser();
+        const today = getTodayISO();
+        const totalKg = state.pasillas.reduce((s, p) => s + Number(p.kilos), 0);
+        const totalPagado = state.pasillas.reduce((s, p) => s + Number(p.totalPagar), 0);
+        const promKilo = totalKg > 0 ? Math.round(totalPagado / totalKg) : 0;
+
+        container.innerHTML = `
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <section class="xl:col-span-5 bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs">
+              <h3 class="text-base font-bold text-espresso-950 mb-1">Registrar Pasilla por Separado (HU19)</h3>
+              <p class="text-xs text-stone-500 mb-4">Se guarda vinculada al agricultor pero en planilla independiente del café pergamino (RN013).</p>
+
+              <form id="form-pasilla" class="space-y-3" novalidate>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="pas-fecha" class="block text-xs font-semibold text-espresso-900 mb-1">Fecha *</label>
+                    <input id="pas-fecha" type="date" value="${today}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm" />
+                  </div>
+                  <div>
+                    <label for="pas-sede" class="block text-xs font-semibold text-espresso-900 mb-1">Sede *</label>
+                    <select id="pas-sede" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm bg-white">
+                      <option value="Abejorral" ${user.sede === 'Abejorral' ? 'selected' : ''}>Abejorral</option>
+                      <option value="Pantanillo" ${user.sede === 'Pantanillo' ? 'selected' : ''}>Pantanillo</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label for="pas-cedula" class="block text-xs font-semibold text-espresso-900 mb-1">Cédula del agricultor * (solo números, máx. 10 dígitos)</label>
+                  <input id="pas-cedula" type="text" inputmode="numeric" maxlength="12" placeholder="Ej. 70123456" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums" />
+                  <div id="pas-farmer-status" class="mt-1 text-xs"></div>
+                </div>
+
+                <div id="pas-nombre-wrap" class="hidden">
+                  <label for="pas-nombre" class="block text-xs font-semibold text-espresso-900 mb-1">Nombre del agricultor nuevo *</label>
+                  <input id="pas-nombre" type="text" placeholder="Nombre completo" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label for="pas-kilos" class="block text-xs font-semibold text-espresso-900 mb-1">Kilos de pasilla *</label>
+                    <input id="pas-kilos" type="number" step="0.5" min="0.5" placeholder="Ej. 30" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums" />
+                  </div>
+                  <div>
+                    <label for="pas-valor" class="block text-xs font-semibold text-espresso-900 mb-1">Valor unitario / kg *</label>
+                    <input id="pas-valor" type="number" step="100" min="100" placeholder="Ej. 8000" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm tabular-nums" />
+                  </div>
+                </div>
+
+                <div class="bg-parchment-100 rounded-xl p-3 flex items-center justify-between text-xs">
+                  <span class="text-stone-600 font-medium">Total a pagar por pasilla:</span>
+                  <span id="pas-total-preview" class="text-base font-extrabold text-espresso-950 tabular-nums">$0</span>
+                </div>
+
+                <div id="pas-error" class="hidden text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl p-3"></div>
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-cafetal-600 hover:bg-cafetal-700 text-white text-sm font-semibold cursor-pointer">
+                  Guardar registro de pasilla
+                </button>
+              </form>
+            </section>
+
+            <section class="xl:col-span-7 bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-base font-bold text-espresso-950">Planilla de Pasilla Registrada</h3>
+                <button type="button" id="btn-export-pasilla-csv" class="px-3 py-1.5 rounded-xl border border-parchment-300 hover:bg-parchment-100 text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar CSV
+                </button>
+              </div>
+
+              <div class="grid grid-cols-3 gap-3 text-xs">
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-stone-500">Total Kilos</p>
+                  <p class="text-lg font-extrabold text-espresso-950 tabular-nums">${fmtNum(totalKg, 1)} kg</p>
+                </div>
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-stone-500">Promedio / Kilo</p>
+                  <p class="text-lg font-extrabold text-cafetal-700 tabular-nums">${fmtCOP(promKilo)}</p>
+                </div>
+                <div class="p-3 rounded-xl bg-parchment-50 border border-parchment-200">
+                  <p class="text-stone-500">Total Pagado</p>
+                  <p class="text-lg font-extrabold text-espresso-950 tabular-nums">${fmtCOP(totalPagado)}</p>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="border-b border-parchment-300 text-stone-500 uppercase">
+                      <th class="py-2 pr-3">Fecha / Sede</th>
+                      <th class="py-2 pr-3">Agricultor</th>
+                      <th class="py-2 pr-3 text-right">Kilos</th>
+                      <th class="py-2 pr-3 text-right">Valor Unit.</th>
+                      <th class="py-2 text-right">Total a Pagar</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-parchment-100 tabular-nums">
+                    ${state.pasillas.slice().reverse().map(p => `
+                      <tr>
+                        <td class="py-2.5 pr-3">${p.fecha} · <span class="text-stone-500">${p.sede}</span></td>
+                        <td class="py-2.5 pr-3 font-semibold">${escapeHtml(p.nombreAgricultor)} <span class="text-stone-400 font-normal">(CC ${p.cedula})</span></td>
+                        <td class="py-2.5 pr-3 text-right">${fmtNum(p.kilos, 1)} kg</td>
+                        <td class="py-2.5 pr-3 text-right">${fmtCOP(p.valorUnitario)}</td>
+                        <td class="py-2.5 text-right font-bold text-espresso-950">${fmtCOP(p.totalPagar)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        `;
+
+        const pasCed = document.getElementById('pas-cedula');
+        const pasStatus = document.getElementById('pas-farmer-status');
+        const pasNombreWrap = document.getElementById('pas-nombre-wrap');
+        const pasNombre = document.getElementById('pas-nombre');
+        const pasKilos = document.getElementById('pas-kilos');
+        const pasValor = document.getElementById('pas-valor');
+
+        pasCed.addEventListener('input', () => {
+          const v = pasCed.value.trim();
+          if (!v) { pasStatus.innerHTML = ''; pasNombreWrap.classList.add('hidden'); return; }
+          if (!isValidCedula(v)) {
+            pasStatus.innerHTML = '<span class="text-red-600">Solo números y máximo 10 dígitos.</span>';
+            pasNombreWrap.classList.add('hidden');
+            return;
+          }
+          const found = state.agricultores.find(a => a.cedula === v);
+          if (found) {
+            pasStatus.innerHTML = `<span class="text-cafetal-700 font-semibold">Agricultor: ${escapeHtml(found.nombre)}</span>`;
+            pasNombreWrap.classList.add('hidden');
+          } else {
+            pasStatus.innerHTML = '<span class="text-cosecha-600 font-medium">Cédula nueva: ingresa el nombre del agricultor.</span>';
+            pasNombreWrap.classList.remove('hidden');
+          }
+        });
+
+        function updatePasPreview() {
+          const k = Number(pasKilos.value) || 0;
+          const v = Number(pasValor.value) || 0;
+          document.getElementById('pas-total-preview').textContent = k > 0 && v > 0 ? fmtCOP(k * v) : '$0';
+        }
+        pasKilos.addEventListener('input', updatePasPreview);
+        pasValor.addEventListener('input', updatePasPreview);
+
+        document.getElementById('form-pasilla').addEventListener('submit', (e) => {
+          e.preventDefault();
+          const fecha = document.getElementById('pas-fecha').value.trim();
+          const sede = document.getElementById('pas-sede').value;
+          const ced = pasCed.value.trim();
+          const k = Number(pasKilos.value);
+          const v = Number(pasValor.value);
+          const errEl = document.getElementById('pas-error');
+          errEl.classList.add('hidden');
+
+          const errs = [];
+          if (!fecha) errs.push('Falta la fecha.');
+          if (!ced) errs.push('Falta la cédula.');
+          else if (!isValidCedula(ced)) errs.push('La cédula se escribe solo con números y tiene máximo 10 dígitos.');
+          if (!k || k <= 0) errs.push('Los kilos de pasilla deben ser mayores que 0.');
+          if (!v || v <= 0) errs.push('El valor unitario de la pasilla debe ser mayor que $0.');
+
+          let farmer = state.agricultores.find(a => a.cedula === ced);
+          if (isValidCedula(ced) && !farmer) {
+            pasNombreWrap.classList.remove('hidden');
+            if (!pasNombre.value.trim()) errs.push('Ingresa el nombre del agricultor nuevo.');
+          }
+
+          if (errs.length > 0) {
+            errEl.innerHTML = errs.map(x => `<p>• ${x}</p>`).join('');
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          if (!farmer) {
+            farmer = { cedula: ced, nombre: pasNombre.value.trim() };
+            state.agricultores.push(farmer);
+          }
+
+          state.pasillas.push({
+            id: `PAS-${Date.now().toString().slice(-4)}`,
+            fecha,
+            sede,
+            cedula: farmer.cedula,
+            nombreAgricultor: farmer.nombre,
+            kilos: k,
+            valorUnitario: v,
+            totalPagar: Math.round(k * v),
+            registradoPor: getCurrentUser().nombre
+          });
+          saveState();
+          showToast(`Pasilla registrada para ${farmer.nombre}: ${fmtCOP(k * v)}.`, 'success');
+          renderShell();
+        });
+
+        document.getElementById('btn-export-pasilla-csv').addEventListener('click', () => {
+          const rows = [['FECHA', 'SEDE', 'CEDULA', 'NOMBRE', 'KILOS', 'VALOR_UNITARIO', 'TOTAL']];
+          state.pasillas.forEach(p => rows.push([p.fecha, p.sede, p.cedula, p.nombreAgricultor, p.kilos, p.valorUnitario, p.totalPagar]));
+          downloadCSV('MiOrigen_Pasilla.csv', rows);
+        });
+      }
+
+      // ==================== VIEW 6: HISTORIAL DE AGRICULTORES (HU07) ====================
+      function renderAgricultoresView(container) {
+        const selectedCed = state.searchFarmerCedula || (state.agricultores[0] ? state.agricultores[0].cedula : '');
+        const farmer = state.agricultores.find(a => a.cedula === selectedCed) || state.agricultores[0];
+        const comprasFarmer = farmer ? state.cargas.filter(c => c.cedula === farmer.cedula && c.muestra) : [];
+        const pasillasFarmer = farmer ? state.pasillas.filter(p => p.cedula === farmer.cedula) : [];
+
+        container.innerHTML = `
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <section class="xl:col-span-4 bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs space-y-3">
+              <h3 class="text-sm font-bold text-espresso-950">Caficultores Registrados (${state.agricultores.length})</h3>
+              <input id="search-farmer-input" type="text" placeholder="Buscar por cédula o nombre..." class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-xs focus:outline-none focus:ring-2 focus:ring-cafetal-600" />
+              <div id="farmer-list-box" class="space-y-1.5 max-h-96 overflow-y-auto">
+                ${state.agricultores.map(a => {
+                  const nComp = state.cargas.filter(c => c.cedula === a.cedula && c.estado === 'Comprada').length;
+                  return `
+                    <button type="button" data-farmer-ced="${a.cedula}" class="farmer-row w-full text-left p-3 rounded-xl border transition cursor-pointer ${farmer && farmer.cedula === a.cedula ? 'border-cafetal-600 bg-cafetal-50/50' : 'border-parchment-200 hover:bg-parchment-50'}">
+                      <p class="text-xs font-bold text-espresso-950">${escapeHtml(a.nombre)}</p>
+                      <div class="flex justify-between text-[11px] text-stone-500 mt-0.5 tabular-nums">
+                        <span>CC ${a.cedula}</span>
+                        <span>${nComp} compra(s)</span>
+                      </div>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </section>
+
+            <section class="xl:col-span-8 space-y-6">
+              ${farmer ? `
+                <div class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs space-y-5">
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-parchment-200">
+                    <div>
+                      <h3 class="text-lg font-bold text-espresso-950">${escapeHtml(farmer.nombre)}</h3>
+                      <p class="text-xs text-stone-500 tabular-nums">Cédula: ${farmer.cedula} · ${comprasFarmer.length} análisis de muestra · ${pasillasFarmer.length} registro(s) de pasilla</p>
+                    </div>
+                  </div>
+
+                  ${comprasFarmer.length > 0 ? `
+                    <div class="relative h-56">
+                      <canvas id="farmer-quality-chart"></canvas>
+                    </div>
+                  ` : ''}
+
+                  <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                      <thead>
+                        <tr class="border-b border-parchment-300 text-stone-500 uppercase">
+                          <th class="py-2 pr-3">Fecha / Sede</th>
+                          <th class="py-2 pr-3 text-right">Kilos</th>
+                          <th class="py-2 pr-3 text-right">Factor</th>
+                          <th class="py-2 pr-3 text-right">Humedad</th>
+                          <th class="py-2 pr-3 text-right">Defectos (P/B)</th>
+                          <th class="py-2 text-right">Estado / Pago</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-parchment-100 tabular-nums">
+                        ${comprasFarmer.length === 0 ? `<tr><td colspan="6" class="py-6 text-center text-stone-500">Sin análisis de muestras registrados aún.</td></tr>` : comprasFarmer.slice().reverse().map(c => `
+                          <tr>
+                            <td class="py-2.5 pr-3">${c.fecha} · ${c.sede}</td>
+                            <td class="py-2.5 pr-3 text-right font-semibold">${fmtNum(c.kilosPagar, 0)} kg</td>
+                            <td class="py-2.5 pr-3 text-right font-bold text-espresso-950">${fmtNum(c.muestra.factorExacto, 2)}</td>
+                            <td class="py-2.5 pr-3 text-right ${c.muestra.humedad > 12 ? 'text-cosecha-600 font-bold' : ''}">${fmtNum(c.muestra.humedad, 1)}%</td>
+                            <td class="py-2.5 pr-3 text-right text-stone-600">${c.muestra.gramosPasilla ?? 0}g / ${c.muestra.gramosBroca ?? 0}g</td>
+                            <td class="py-2.5 text-right"><span class="font-semibold">${c.estado}</span> · ${fmtCOP(c.pagoTotal)}</td>
+                          </tr>
+                        `).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Feedback Guide Table -->
+                <div class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+                  <h4 class="text-sm font-bold text-espresso-950 mb-3">Guía de Retroalimentación de Calidad para el Caficultor</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    ${DEFECT_GUIDE.map(g => `
+                      <div class="p-3.5 rounded-xl bg-parchment-50 border border-parchment-200 text-xs">
+                        <p class="font-bold text-espresso-950">${g.defecto}</p>
+                        <p class="text-stone-600 mt-1"><strong>Causa:</strong> ${g.causa}</p>
+                        <p class="text-cafetal-800 mt-1"><strong>Recomendación:</strong> ${g.recomendacion}</p>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </section>
+          </div>
+        `;
+
+        container.querySelectorAll('[data-farmer-ced]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.searchFarmerCedula = btn.dataset.farmerCed;
+            renderActiveView();
+            refreshIcons();
+          });
+        });
+
+        const searchIn = document.getElementById('search-farmer-input');
+        searchIn.addEventListener('input', () => {
+          const q = searchIn.value.toLowerCase().trim();
+          container.querySelectorAll('.farmer-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+          });
+        });
+
+        // Render Chart.js quality trend
+        if (comprasFarmer.length > 0 && typeof Chart !== 'undefined') {
+          const ctx = document.getElementById('farmer-quality-chart').getContext('2d');
+          farmerChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: comprasFarmer.map(c => `${c.fecha} (${c.id})`),
+              datasets: [
+                {
+                  label: 'Factor de rendimiento (menor es mejor)',
+                  data: comprasFarmer.map(c => c.muestra.factorExacto),
+                  borderColor: '#1B6B4A',
+                  backgroundColor: 'rgba(27, 107, 74, 0.12)',
+                  tension: 0.25,
+                  fill: true,
+                  yAxisID: 'y'
+                },
+                {
+                  label: 'Estándar 94',
+                  data: comprasFarmer.map(() => 94),
+                  borderColor: '#D97706',
+                  borderDash: [5, 5],
+                  pointRadius: 0,
+                  yAxisID: 'y'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+              scales: { y: { suggestedMin: 86, suggestedMax: 104 } }
+            }
+          });
+        }
+      }
+
+      // ==================== VIEW 7: PROMEDIO Y FACTOR SEMANAL (HU20, JEFA ONLY) ====================
+      function renderResumenSemanalView(container) {
+        if (!isJefa()) {
+          container.innerHTML = `<div class="bg-white p-6 rounded-2xl border border-red-200 text-red-700 text-sm">Acceso restringido: solo la Jefa consulta el promedio y factor consolidado para venta (HU20).</div>`;
+          return;
+        }
+
+        const sedeFiltro = state.resumenSedeFiltro || 'Ambas';
+        const compras = state.cargas.filter(c => c.estado === 'Comprada' && (sedeFiltro === 'Ambas' || c.sede === sedeFiltro));
+        const res = calcularResumenCompras(compras);
+
+        container.innerHTML = `
+          <div class="space-y-6">
+            <!-- Filter Bar -->
+            <div class="bg-white rounded-2xl border border-parchment-300 p-4 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-espresso-900">Consolidado por sede:</span>
+                ${['Ambas', 'Abejorral', 'Pantanillo'].map(s => `
+                  <button type="button" data-resumen-sede="${s}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition ${sedeFiltro === s ? 'bg-espresso-900 text-white' : 'bg-parchment-100 text-espresso-900 hover:bg-parchment-200'}">
+                    ${s === 'Ambas' ? 'Ambas sedes (Consolidado)' : `Sede ${s}`}
+                  </button>
+                `).join('')}
+              </div>
+              <span class="text-xs text-stone-500">${res.count} compra(s) confirmada(s)</span>
+            </div>
+
+            <!-- KPI Cards (RN017 & RN015) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+                <p class="text-xs font-semibold text-stone-500">Precio Promedio de Compra</p>
+                <p class="text-2xl font-extrabold text-espresso-950 mt-1.5 tabular-nums">${fmtCOP(res.precioPromedioKilo)}<span class="text-xs font-normal text-stone-500">/kg</span></p>
+                <p class="text-xs text-stone-500 mt-1 tabular-nums">${fmtCOP(res.precioPromedioCarga)} / carga · Σ Pago ÷ Σ Kilos</p>
+              </div>
+
+              <div class="bg-espresso-900 text-white rounded-2xl p-5 shadow-xs">
+                <p class="text-xs font-semibold text-parchment-300">Factor del Café Comprado (RN017)</p>
+                <p class="text-3xl font-extrabold text-cafetal-100 mt-1.5 tabular-nums">${res.count > 0 ? fmtNum(res.factorComprado, 2) : '—'}</p>
+                <p class="text-[11px] text-parchment-300/80 mt-1">(Σ Kilos × 70) ÷ Σ Excelso · Ponderado real</p>
+              </div>
+
+              <div class="bg-cafetal-50 rounded-2xl border border-cafetal-200 p-5 shadow-xs">
+                <p class="text-xs font-semibold text-cafetal-800">Meta Mínima de Venta (+3% · RN015)</p>
+                <p class="text-2xl font-extrabold text-cafetal-800 mt-1.5 tabular-nums">${fmtCOP(res.precioMetaVentaKilo)}<span class="text-xs font-normal">/kg</span></p>
+                <p class="text-xs text-cafetal-700 mt-1 tabular-nums">${fmtCOP(res.precioMetaVentaCarga)} / carga</p>
+              </div>
+
+              <div class="bg-white rounded-2xl border border-parchment-300 p-5 shadow-xs">
+                <p class="text-xs font-semibold text-stone-500">Volumen Total Acopiado</p>
+                <p class="text-2xl font-extrabold text-espresso-950 mt-1.5 tabular-nums">${fmtNum(res.totalKilos, 1)} <span class="text-xs font-normal text-stone-500">kg</span></p>
+                <p class="text-xs text-stone-500 mt-1 tabular-nums">Excelso: ${fmtNum(res.totalExcelso, 2)} kg · ${fmtCOP(res.totalPagado)}</p>
+              </div>
+            </div>
+
+            <!-- Trilladora Verification Simulator (RN014 & RN015 - outside system sale, verification helper) -->
+            <section class="bg-white rounded-2xl border border-parchment-300 p-5 sm:p-6 shadow-xs">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="text-base font-bold text-espresso-950">Verificador Previo a la Venta con Trilladora</h3>
+                  <p class="text-xs text-stone-500">Compara el precio y factor que mide la trilladora frente al promedio y factor comprado (la venta se cierra por fuera del sistema).</p>
+                </div>
+                <span class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-parchment-100 text-espresso-800">RN014 · RN015</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label for="sim-precio-venta" class="block text-xs font-semibold text-espresso-900 mb-1">Precio ofrecido por trilladora (COP / kilo)</label>
+                  <input id="sim-precio-venta" type="number" value="${res.precioMetaVentaKilo || 17000}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm font-semibold tabular-nums" />
+                </div>
+                <div>
+                  <label for="sim-factor-venta" class="block text-xs font-semibold text-espresso-900 mb-1">Factor medido por la trilladora</label>
+                  <input id="sim-factor-venta" type="number" step="0.01" value="${res.factorComprado || 94.74}" class="w-full px-3 py-2 rounded-xl border border-parchment-300 text-sm font-semibold tabular-nums" />
+                </div>
+              </div>
+              <div id="sim-venta-result" class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs"></div>
+            </section>
+          </div>
+        `;
+
+        container.querySelectorAll('[data-resumen-sede]').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.resumenSedeFiltro = btn.dataset.resumenSede;
+            renderActiveView();
+            refreshIcons();
+          });
+        });
+
+        const simP = document.getElementById('sim-precio-venta');
+        const simF = document.getElementById('sim-factor-venta');
+        function evalSimVenta() {
+          const pv = Number(simP.value) || 0;
+          const fv = Number(simF.value) || 0;
+          const out = document.getElementById('sim-venta-result');
+          if (res.count === 0) {
+            out.innerHTML = `<p class="text-stone-500">Registra al menos una compra confirmada para comparar.</p>`;
+            return;
+          }
+          const margenPct = res.precioPromedioKilo > 0 ? ((pv - res.precioPromedioKilo) / res.precioPromedioKilo) * 100 : 0;
+          const gananciaEst = Math.round((pv - res.precioPromedioKilo) * res.totalKilos);
+          const diffFactor = Number((fv - res.factorComprado).toFixed(2));
+          const cumpleMargen = margenPct >= 3;
+          const cumpleFactor = Math.abs(diffFactor) <= 1;
+
+          out.innerHTML = `
+            <div class="p-3.5 rounded-xl border ${cumpleMargen ? 'bg-cafetal-50 border-cafetal-200 text-cafetal-900' : (margenPct > 0 ? 'bg-amber-50 border-amber-200 text-amber-900' : 'bg-red-50 border-red-200 text-red-900')}">
+              <p class="font-bold">Margen sobre promedio (RN015): ${margenPct >= 0 ? '+' : ''}${fmtNum(margenPct, 2)}%</p>
+              <p class="mt-1 tabular-nums">Diferencia total estimada: <strong>${fmtCOP(gananciaEst)}</strong> (${cumpleMargen ? 'Cumple meta ≥ +3%' : 'Por debajo de la meta del 3%'})</p>
+            </div>
+            <div class="p-3.5 rounded-xl border ${cumpleFactor ? 'bg-cafetal-50 border-cafetal-200 text-cafetal-900' : 'bg-red-50 border-red-200 text-red-900'}">
+              <p class="font-bold">Desviación de Factor (RN014): ${diffFactor >= 0 ? '+' : ''}${fmtNum(diffFactor, 2)} pts</p>
+              <p class="mt-1">${cumpleFactor ? 'Dentro de la tolerancia máxima de ±1 punto.' : 'Alerta: supera la diferencia máxima de 1 punto entre compra y venta.'}</p>
+            </div>
+          `;
+        }
+        simP.addEventListener('input', evalSimVenta);
+        simF.addEventListener('input', evalSimVenta);
+        evalSimVenta();
+      }
+
+      // ==================== CSV EXPORT HELPER ====================
+      function downloadCSV(filename, rows) {
+        const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast(`Archivo ${filename} descargado.`, 'success');
+      }
+
+      // Boot app
+      renderShell();
+
+      // HU04: la bolsa y el dólar se consultan solos al abrir la página y cada 5 minutos
+      // mientras la pestaña esté visible.
+      actualizarMercado();
+      setInterval(() => {
+        if (document.visibilityState === 'visible') actualizarMercado();
+      }, MERCADO_REFRESCO_MS);
+    })();
+  </script>
+</body>
+</html>
